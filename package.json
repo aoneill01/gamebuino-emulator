@@ -9,6 +9,10 @@
     "tsc": "tsc"
   },
   "author": "Andy O'Neill <aoneill01@gmail.com>",
+  "repository": {
+	"type" : "git", 
+	"url" : "https://github.com/aoneill01/gamebuino-emulator.git"
+  },
   "license": "MIT",
   "devDependencies": {
     "typescript": "^2.5.3"
