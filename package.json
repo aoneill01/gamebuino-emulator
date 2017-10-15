@@ -1,0 +1,16 @@
+{
+  "name": "gamebuino-emulator",
+  "version": "1.0.0",
+  "description": "Library to emulate a Gamebuino.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "tsc": "tsc"
+  },
+  "author": "Andy O'Neill <aoneill01@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^2.5.3"
+  }
+}
