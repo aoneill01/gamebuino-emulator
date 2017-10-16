@@ -1,8 +1,8 @@
 export namespace HelloWorld {
-  export function sayHello() {
-    console.log('hi')
+  export function sayHello(): string {
+    return 'hi'
   }
-  export function sayGoodbye() {
-    console.log('goodbye')
+  export function sayGoodbye(): string {
+    return 'goodbye'
   }
 }
