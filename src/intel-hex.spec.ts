@@ -16,15 +16,21 @@ describe('decode function', () => {
     })
 
     it('should throw when line does not start with colon', () => {
+        expect(decode.bind(this, simpleHex.substring(1), 0x0200))
+            .to.throw('Line must start with colon')
+    })
 
+    it('should throw when invalid checksum', () => {
+        expect(decode.bind(this, ':10010000214601360121470136007EFE09D2190141', 0x0200))
+            .to.throw('Invalid checksum')
     })
 
     it('should parse a simple hex string', () => {
         let result = decode(simpleHex, 0x0200)
         expect(result[0x0100]).to.equal(0x21)
         expect(result[0x010f]).to.equal(0x01)
-        expect(result[0x0130]).to.equal(0x00)
+        expect(result[0x0130]).to.equal(0x3f)
         expect(result[0x013f]).to.equal(0x21)
     })
 
-});
+})
