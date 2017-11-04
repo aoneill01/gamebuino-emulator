@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "mocha -r ts-node/register src/**/*.spec.ts",
-    "tsc": "tsc"
+    "tsc": "tsc",
+    "debug": "npm run tsc && node dist/atsamd21.js"
   },
   "author": "Andy O'Neill <aoneill01@gmail.com>",
   "repository": {
@@ -16,6 +17,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/chai": "^4.0.4",
+    "@types/node": "^7.0.5",
     "@types/mocha": "^2.2.43",
     "chai": "^4.1.2",
     "mocha": "^4.0.1",

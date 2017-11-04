@@ -3,7 +3,10 @@
       "module": "commonjs",
       "target": "es5",
       "declaration": true,
-      "outDir": "./dist"
+      "outDir": "./dist",
+      "typeRoots": [
+        "./node_modules/@types"
+      ]
     },
     "include": [
       "src/**/*"

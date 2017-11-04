@@ -1,1 +1,1 @@
-export {HelloWorld} from './hello-world'
+export { decode } from './intel-hex'
