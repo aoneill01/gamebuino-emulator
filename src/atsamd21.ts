@@ -2,14 +2,23 @@ import * as fs from 'fs';
 
 class Atsamd21 {
     memory: Uint32Array;
-    // Stack pointer
-    sp: number;
-    // Program counter
-    pc: number;
-    // Link register
-    lr: number;
+
     instruction: number;
     registers: number[] = [];
+
+    condN: boolean;
+    condZ: boolean;
+    condV: boolean;
+    condC: boolean;
+
+    // Stack pointer
+    readonly spIndex = 13;
+    // Link register
+    readonly lrIndex = 14;
+    // Program counter
+    readonly pcIndex = 15;
+
+    readonly debug: boolean = false;
 
     constructor(memory: Uint8Array) {
         this.memory = memory;
@@ -39,22 +48,42 @@ class Atsamd21 {
         return this.registers[index];
     }
 
+    private incrementPc() {
+        this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + 2);
+    }
+
+    private incrementSp(count: number = 1) {
+        this.setRegister(this.spIndex, this.readRegister(this.spIndex) + count);
+    }
+
+    private setSubtractionConditionCodes(arg1: number, arg2: number) {
+        let result: number = arg1 - arg2;
+        this.condZ = result == 0;
+        this.condN = result < 0;
+        // todo C, V
+    }
+
+    private log(message: string) {
+        if (this.debug) {
+            console.log(message);
+        }
+    }
+
     reset() {
-        this.pc = this.fetchHalfword(0x0004) & ~1; // set bit 0 to 0. 
-        console.log(`init pc: ${this.pc.toString(16)}`);
+        this.setRegister(this.pcIndex, this.fetchHalfword(0x0004) & ~1); // set bit 0 to 0. 
+        this.log(`init pc: ${this.readRegister(this.pcIndex).toString(16)}`);
         // pc one instruction ahead due to pipeline.
-        this.pc += 2;
+        this.incrementPc();
     }
 
     run() {
         this.reset();
         
-        for (var i = 0; i < 9; i++) {
-            this.instruction = this.fetchHalfword(this.pc - 2);
-            this.pc += 2;
+        for (var i = 0; i < 48000000; i++) {
+            this.instruction = this.fetchHalfword(this.readRegister(this.pcIndex) - 2);
+            this.log(`inst at ${(this.readRegister(this.pcIndex) - 2).toString(16)}: ${this.instruction.toString(16)}`);
+            this.incrementPc();
 
-            console.log(`inst at ${(this.pc - 4).toString(16)}: ${this.instruction.toString(16)}`);
-            
             if ((this.instruction & 0b1110000000000000) == 0b0000000000000000) {
                 let opcode: number = (this.instruction & 0b0001100000000000) >> 11;
                 let offset: number = (this.instruction & 0b0000011111000000) >> 6;
@@ -62,7 +91,7 @@ class Atsamd21 {
                 let rd: number =     (this.instruction & 0b0000000000000111);
                 switch (opcode) {
                     case 0: // LSL
-                    console.log(`LSL: rd: ${rd}, rs: ${rs}, offset: ${offset}`);
+                    this.log(`LSL: rd: ${rd}, rs: ${rs}, offset: ${offset}`);
                         this.setRegister(rd, this.readRegister(rs) << offset);
                         break;
                     case 1: // LSR
@@ -75,27 +104,60 @@ class Atsamd21 {
             }
             else if ((this.instruction & 0b1110000000000000) == 0b0010000000000000) {
                 let opcode: number = (this.instruction & 0b0001100000000000) >> 11;
-                let rd: number = (this.instruction & 0b0000011100000000) >> 8;
+                let rd: number =     (this.instruction & 0b0000011100000000) >> 8;
                 let immediateValue: number = this.instruction & 0b11111111;
                 switch (opcode) {
                     case 0: // mov
-                        console.log(`Move immediate: rd: ${rd}, immediate value: ${immediateValue}`);
+                        this.log(`Move immediate: rd: ${rd}, immediate value: ${immediateValue}`);
                         this.setRegister(rd, immediateValue);
                         // TODO set flags
                         break;
                     case 1: // cmp
                         break;
                     case 2: // add
+                        this.log(`Add immediate: rd: ${rd}, immediate value: ${immediateValue}`)
+                        this.setRegister(rd, this.readRegister(rd) + immediateValue);
+                        // TODO set flags
                         break;
                     case 3: // sub
+                        break;
+                }
+            }
+            else if ((this.instruction & 0b1111110000000000) == 0b0100000000000000) {
+                let opcode: number = (this.instruction & 0b0000001111000000) >> 6;
+                let rs: number =     (this.instruction & 0b0000000000111000) >> 3;
+                let rd: number =     (this.instruction & 0b0000000000000111);
+                switch (opcode) {
+                    case 0b1010: // CMP Rd, Rs
+                        this.log(`cmp ${this.readRegister(rd).toString(16)} ${this.readRegister(rs).toString(16)}`);
+                        this.setSubtractionConditionCodes(this.readRegister(rd), this.readRegister(rs));
+                        break;
+                    default: 
+                        // todo
+                        break;
+                }
+
+            }
+            else if ((this.instruction & 0b1111110000000000) == 0b0100010000000000) {
+                let opH1H2: number = (this.instruction & 0b0000001111000000) >> 6;
+                let rsHs: number =   (this.instruction & 0b0000000000111000) >> 3;
+                let rdHd: number =   (this.instruction & 0b0000000000000111);
+                switch (opH1H2) {
+                    case 0b1101:
+                        this.log(`BX ${rsHs + 8}`);
+                        this.setRegister(this.pcIndex, this.readRegister(rsHs + 8) & ~1); 
+                        this.incrementPc();
+                        break;
+                    default:
+                        // todo 
                         break;
                 }
             }
             else if ((this.instruction & 0b1111100000000000) == 0b0100100000000000) {
                 let rd: number = (this.instruction & 0b0000011100000000) >> 8;
                 let immediateValue: number = (this.instruction & 0xff) << 2;
-                let readValue: number = this.fetchWord((this.pc & ~0b10) + immediateValue);
-                console.log(`PC-relative load: rd: ${rd}, immediate value: ${immediateValue}, read value: ${readValue.toString(16)}`);
+                let readValue: number = this.fetchWord((this.readRegister(this.pcIndex) & ~0b10) + immediateValue);
+                this.log(`PC-relative load: rd: ${rd}, immediate value: ${immediateValue}, read value: ${readValue.toString(16)}`);
                 this.setRegister(rd, readValue)
             }
             else if ((this.instruction & 0b1110000000000000) == 0b0110000000000000) {
@@ -106,7 +168,7 @@ class Atsamd21 {
 
                 switch (bl) {
                     case 0: // store to memory, transfer word
-                        console.log(`store with offset: addr: ${(this.readRegister(rb) + offset).toString(16)}, value: ${this.readRegister(rd).toString(16)}`);
+                        this.log(`store with offset: addr: ${(this.readRegister(rb) + offset).toString(16)}, value: ${this.readRegister(rd).toString(16)}`);
                         this.writeWord(this.readRegister(rb) + offset, this.readRegister(rd));
                         break;
                     default:
@@ -117,19 +179,49 @@ class Atsamd21 {
             else if ((this.instruction & 0b1111011000000000) == 0b1011010000000000) {
                 let l: boolean = !!(this.instruction & 0b0000100000000000);
                 let r: boolean = !!(this.instruction & 0b0000000100000000);
-                console.log(`push/pop reg: load/store: ${l}, pc/lr: ${r}, rlist: ${(0xff & this.instruction).toString(2)}`);
+                this.log(`push/pop reg: load/store: ${l}, pc/lr: ${r}, rlist: ${(0xff & this.instruction).toString(2)}`);
                 let mask = 1;
                 for (let i = 0; i <= 8; i++) {
                     if (this.instruction & mask) {
-                        this.writeWord(this.sp, this.registers[i]);
-                        this.sp++;
+                        this.writeWord(this.readRegister(this.spIndex), this.registers[i]);
+                        this.incrementSp();
                     }
                     mask = mask << 1;
                 }
                 if (r) {
-                    this.writeWord(this.sp, this.lr);
-                    this.sp++;
+                    this.writeWord(this.readRegister(this.spIndex), this.readRegister(this.lrIndex));
+                    this.incrementSp();
                 }
+            }
+            
+            else if ((this.instruction & 0b1111000000000000) == 0b1101000000000000) {
+                let condition: number = (this.instruction & 0b0000111100000000) >> 8;
+                let offset: number =    (this.instruction & 0b0000000011111111);
+                // Handle negative
+                if (offset & 0b10000000) offset |= ~0b11111111;
+                offset = offset << 1;
+                switch (condition) {
+                    case 0b0001: // BNE
+                        this.log(`BNE ${offset}`);
+                        if (!this.condZ) {
+                            this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) - 2 + offset);
+                            this.incrementPc();
+                        }
+                        // else console.log(`EQUAL at ${i}`);
+                        break;
+                    default:
+                        // todo
+                        break;
+                }
+            }
+            else if ((this.instruction & 0b1111100000000000) == 0b1110000000000000) {
+                let offset: number = (this.instruction & 0b0000011111111111);
+                // Handle negative
+                if (offset & 0b0000010000000000) offset |= ~0b0000011111111111;
+                offset = offset << 1;
+                this.log(`unconditional branch to ${(this.readRegister(this.pcIndex) + offset).toString(16)}`)
+                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                this.incrementPc();
             }
             else if ((this.instruction & 0b1111000000000000) == 0b1111000000000000) {
                 let low: boolean = !!(this.instruction & 0b0000100000000000);
@@ -137,15 +229,16 @@ class Atsamd21 {
                 if (!low) {
                     // Handle negative
                     if (offset & 0b0000010000000000) offset |= ~0b0000011111111111;
-                    console.log(`long branch with link: high, offset: ${offset}`);
-                    this.lr = this.pc + (offset << 12);
+                    this.log(`long branch with link: high, offset: ${offset}`);
+                    this.setRegister(this.lrIndex, this.readRegister(this.pcIndex) + (offset << 12));
                 }
                 else {
-                    console.log(`long branch with link: low, offset: ${offset}`);
+                    this.log(`long branch with link: low, offset: ${offset}`);
                     // todo figure out prefetch
-                    let tmp: number = this.pc - 2;
-                    this.pc = this.lr + (offset << 1) + 2;
-                    this.lr = tmp | 1;
+                    let nextInstruction: number = this.readRegister(this.pcIndex) - 2;
+                    this.setRegister(this.pcIndex, this.readRegister(this.lrIndex) + (offset << 1));
+                    this.setRegister(this.lrIndex, nextInstruction | 1);
+                    this.incrementPc();
                 }
             }
         }
