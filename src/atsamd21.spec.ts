@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import 'mocha';
 import * as fs from 'fs';
 
-/*
+
 fs.readFile('./blinker01.gcc.thumb.flash.bin', function(err, data) {  
     if (err) throw err;
     var memory = new Uint8Array(data.length);
@@ -11,11 +11,15 @@ fs.readFile('./blinker01.gcc.thumb.flash.bin', function(err, data) {
 
     var micro = new Atsamd21();
     micro.loadFlash(memory);
-    for (var i = 0; i < 48000000; i++) {
+    var t0 = Date.now();
+    var count = 48000000
+    for (var i = 0; i < count; i++) {
         micro.step();
     }
+    var t1 = Date.now();
+    console.log(`${t1 - t0} ms, ${ 1000 * count / (t1 - t0) } Hz.`)
 });
-*/
+
 
 describe('blinker01.gcc.thumb.flash.bin program', () => {
     var micro: Atsamd21;
