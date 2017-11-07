@@ -3,7 +3,7 @@ export class Atsamd21 {
     private _sram: Uint8Array;
     private _decodedInstructions: {():void}[] = [];
 
-    registers: number[] = [];
+    registers: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
     condN: boolean;
     condZ: boolean;
@@ -11,6 +11,8 @@ export class Atsamd21 {
     condC: boolean;
 
     peripheralCallback: (addr: number, value: number) => void;
+
+    foo: number;
 
     // Stack pointer
     readonly spIndex = 13;
@@ -69,10 +71,10 @@ export class Atsamd21 {
             }
             
             if (addr == 0x41004418) {
-                //console.log('LIGHT ON');
+                console.log('LIGHT ON');
             }
             if (addr == 0x41004414) {
-                //console.log('LIGHT OFF');
+                console.log('LIGHT OFF');
             }
         }
     }
@@ -118,6 +120,11 @@ export class Atsamd21 {
         // console.log(`0x${(this.readRegister(this.pcIndex) - 2).toString(16)}`);
         var instructionHandler = this._decodedInstructions[this.readRegister(this.pcIndex) - 2];
         this.incrementPc();
+        instructionHandler();
+    }
+
+    speedTestNop() {
+        var instructionHandler = this._decodedInstructions[0];        
         instructionHandler();
     }
 
@@ -309,6 +316,18 @@ export class Atsamd21 {
                         this.incrementPc();
                     };
                 }
+            }
+        }
+        {
+            let bar = 2;
+            this._decodedInstructions[0] = () => {
+                this.foo += bar;
+                //this.incrementPc();
+                //this.setStatusRegister(2, 1, 1);
+                var a = this.readRegister(1);
+                //var b = this.readRegister(2);
+                //this.setStatusRegister(a, b, 1);
+                
             }
         }
     }

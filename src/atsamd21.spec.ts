@@ -15,6 +15,7 @@ fs.readFile('./blinker01.gcc.thumb.flash.bin', function(err, data) {
     var count = 48000000
     for (var i = 0; i < count; i++) {
         micro.step();
+        // micro.speedTestNop();
     }
     var t1 = Date.now();
     console.log(`${t1 - t0} ms, ${ 1000 * count / (t1 - t0) } Hz.`)
