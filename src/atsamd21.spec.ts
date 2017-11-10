@@ -11,14 +11,17 @@ fs.readFile('./blinker01.gcc.thumb.flash.bin', function(err, data) {
 
     var micro = new Atsamd21();
     micro.loadFlash(memory);
-    var t0 = Date.now();
-    var count = 48000000
-    for (var i = 0; i < count; i++) {
-        micro.step();
-        // micro.speedTestNop();
+    for (var inst = 0x64; inst < 0xf4; inst+=2) {
+        var t0 = Date.now();
+        var count = 48000000;
+        for (var i = 0; i < count; i++) {
+            micro.step();
+            //micro.setRegister(micro.pcIndex, inst + 4);
+            //micro.speedTestNop(inst);
+        }
+        var t1 = Date.now();
+        console.log(`${inst.toString(16)} ${t1 - t0} ms, ${ 1000 * count / (t1 - t0) } Hz.`);
     }
-    var t1 = Date.now();
-    console.log(`${t1 - t0} ms, ${ 1000 * count / (t1 - t0) } Hz.`)
 });
 
 

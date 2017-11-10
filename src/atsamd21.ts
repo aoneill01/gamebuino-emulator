@@ -12,7 +12,7 @@ export class Atsamd21 {
 
     peripheralCallback: (addr: number, value: number) => void;
 
-    foo: number;
+    cycleCount: number = 0;
 
     // Stack pointer
     readonly spIndex = 13;
@@ -41,20 +41,32 @@ export class Atsamd21 {
     }
 
     fetchHalfword(addr: number): number {
-        return this._flash[addr] | (this._flash[addr + 1] << 8);
+        if (addr < 0x20000000) {
+            return this._flash[addr] | (this._flash[addr + 1] << 8);
+        }
+        if (addr < 0x40000000) {
+            addr -= 0x20000000;
+            return this._sram[addr] | (this._sram[addr + 1] << 8);
+        }
     }
 
     fetchWord(addr: number): number {
-        return this._flash[addr] | (this._flash[addr + 1] << 8) | (this._flash[addr + 2] << 16) | (this._flash[addr + 3] << 24);
+        if (addr < 0x20000000) {
+            return this._flash[addr] | (this._flash[addr + 1] << 8) | (this._flash[addr + 2] << 16) | (this._flash[addr + 3] << 24);
+        }
+        if (addr < 0x40000000) {
+            addr -= 0x20000000;
+            return this._sram[addr] | (this._sram[addr + 1] << 8) | (this._sram[addr + 2] << 16) | (this._sram[addr + 3] << 24);
+        }
     }
 
     writeWord(addr: number, value: number) {
         // Flash
         if (addr < 0x20000000) {
-            this._flash[addr] = value & 0xff;
+            /* this._flash[addr] = value & 0xff;
             this._flash[addr + 1] = (value >> 8) & 0xff;
             this._flash[addr + 2] = (value >> 16) & 0xff;
-            this._flash[addr + 3] = (value >> 24) & 0xff;
+            this._flash[addr + 3] = (value >> 24) & 0xff; */
         }
         // SRAM
         else if (addr < 0x40000000) {
@@ -71,10 +83,10 @@ export class Atsamd21 {
             }
             
             if (addr == 0x41004418) {
-                console.log('LIGHT ON');
+                //console.log('LIGHT ON');
             }
             if (addr == 0x41004414) {
-                console.log('LIGHT OFF');
+                //console.log('LIGHT OFF');
             }
         }
     }
@@ -88,7 +100,8 @@ export class Atsamd21 {
     }
 
     private incrementPc() {
-        this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + 2);
+        this.registers[this.pcIndex]+=2;
+        // this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + 2);
     }
 
     private incrementSp(count: number = 1) {
@@ -114,6 +127,7 @@ export class Atsamd21 {
         this.log(`init pc: ${this.readRegister(this.pcIndex).toString(16)}`);
         // pc one instruction ahead due to pipeline.
         this.incrementPc();
+        // this.incrementPc();
     }
 
     step() {
@@ -123,9 +137,9 @@ export class Atsamd21 {
         instructionHandler();
     }
 
-    speedTestNop() {
-        var instructionHandler = this._decodedInstructions[0];        
-        instructionHandler();
+    speedTestNop(i: number) {
+        var instructionHandler = this._decodedInstructions[i];        
+        if (instructionHandler) instructionHandler();
     }
 
     private decodeInstructions() {
@@ -316,18 +330,6 @@ export class Atsamd21 {
                         this.incrementPc();
                     };
                 }
-            }
-        }
-        {
-            let bar = 2;
-            this._decodedInstructions[0] = () => {
-                this.foo += bar;
-                //this.incrementPc();
-                //this.setStatusRegister(2, 1, 1);
-                var a = this.readRegister(1);
-                //var b = this.readRegister(2);
-                //this.setStatusRegister(a, b, 1);
-                
             }
         }
     }
