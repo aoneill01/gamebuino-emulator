@@ -7,6 +7,7 @@
   "scripts": {
     "test": "mocha -r ts-node/register src/**/*.spec.ts",
     "tsc": "tsc",
+    "build": "node ./node_modules/webpack/bin/webpack",
     "debug": "npm run tsc && node dist/atsamd21.js"
   },
   "author": "Andy O'Neill <aoneill01@gmail.com>",
@@ -17,11 +18,13 @@
   "license": "MIT",
   "devDependencies": {
     "@types/chai": "^4.0.4",
-    "@types/node": "^7.0.5",
     "@types/mocha": "^2.2.43",
+    "@types/node": "^7.0.5",
     "chai": "^4.1.2",
     "mocha": "^4.0.1",
+    "ts-loader": "^3.1.1",
     "ts-node": "^3.3.0",
-    "typescript": "^2.5.3"
+    "typescript": "^2.5.3",
+    "webpack": "^3.8.1"
   }
 }
