@@ -1,3 +1,8 @@
+import { PortRegister } from "./port-register";
+
+const PORTA_OFFSET: number = 0x41004400;
+const PORTB_OFFSET: number = 0x41004480;
+
 export class Atsamd21 {
     private _flash: Uint8Array;
     private _sram: Uint8Array;
@@ -10,8 +15,12 @@ export class Atsamd21 {
     condV: boolean;
     condC: boolean;
 
-    peripheralCallback: (addr: number, value: number) => void;
+    private _peripheralWriteHandlers: ((addr: number, value: number) => void)[] = [];
+    private _peripheralReadHandlers: ((addr: number) => number)[] = [];
 
+    portA: PortRegister;
+    portB: PortRegister;
+    
     cycleCount: number = 0;
 
     // Stack pointer
@@ -28,6 +37,9 @@ export class Atsamd21 {
         for (var i = 0; i < this._flash.length; i++) this._flash[i] = 0xff;
         this._sram = new Uint8Array(0x8000); // 32KB 
         for (var i = 0; i < this._sram.length; i++) this._sram[i] = 0xff;
+        
+        this.portA = new PortRegister(PORTA_OFFSET, this);
+        this.portB = new PortRegister(PORTB_OFFSET, this);
     }
 
     loadFlash(contents: Uint8Array, offset: number = 0) {
@@ -78,10 +90,8 @@ export class Atsamd21 {
         }
         // Peripheral 
         else if (addr < 0x60000000) {
-            if (this.peripheralCallback) {
-                this.peripheralCallback(addr, value);
-            }
-            
+            this._peripheralWriteHandlers[addr](addr, value);
+
             if (addr == 0x41004418) {
                 //console.log('LIGHT ON');
             }
@@ -97,6 +107,14 @@ export class Atsamd21 {
 
     readRegister(index: number): number {
         return this.registers[index];
+    }
+
+    registerPeripheralWriteHandler(address: number, handler: (address: number, value: number) => void) {
+        this._peripheralWriteHandlers[address] = handler;
+    }
+
+    registerPeripheralReadHandler(address: number, handler: (address: number) => number) {
+        this._peripheralReadHandlers[address] = handler;
     }
 
     private incrementPc() {

@@ -3,7 +3,6 @@ import { expect } from 'chai';
 import 'mocha';
 import * as fs from 'fs';
 
-
 fs.readFile('./blinker01.gcc.thumb.flash.bin', function(err, data) {  
     if (err) throw err;
     var memory = new Uint8Array(data.length);
@@ -11,19 +10,11 @@ fs.readFile('./blinker01.gcc.thumb.flash.bin', function(err, data) {
 
     var micro = new Atsamd21();
     micro.loadFlash(memory);
-    for (var inst = 0x64; inst < 0xf4; inst+=2) {
-        var t0 = Date.now();
         var count = 48000000;
         for (var i = 0; i < count; i++) {
             micro.step();
-            //micro.setRegister(micro.pcIndex, inst + 4);
-            //micro.speedTestNop(inst);
         }
-        var t1 = Date.now();
-        console.log(`${inst.toString(16)} ${t1 - t0} ms, ${ 1000 * count / (t1 - t0) } Hz.`);
-    }
 });
-
 
 describe('blinker01.gcc.thumb.flash.bin program', () => {
     var micro: Atsamd21;
@@ -45,7 +36,7 @@ describe('blinker01.gcc.thumb.flash.bin program', () => {
     });
 
     it('loads correct initial state', () => {
-        expect(micro.readRegister(micro.pcIndex)).to.equal(0x40 + 2 /* pipeline */);
+        expect(micro.readRegister(micro.pcIndex)).to.equal(0x40 + 2);
         expect(micro.readRegister(micro.spIndex)).to.equal(0x20001000);
         expect(micro.readRegister(micro.lrIndex)).to.equal(0xffffffff);
     })
@@ -55,12 +46,15 @@ describe('blinker01.gcc.thumb.flash.bin program', () => {
         micro.step();
         micro.step();
 
-        expect(micro.readRegister(micro.pcIndex)).to.equal(0x64 + 2 /* pipeline */);
+        expect(micro.readRegister(micro.pcIndex)).to.equal(0x64 + 2);
     });
 
     it('executes first instruction of notmain', () => {
         var accessedPeripheral: boolean = false;
-        micro.peripheralCallback = (addr: number, value: number) => { accessedPeripheral = true; }
+        micro.portA.addOutListener((mask: number, value: number) => {
+            accessedPeripheral = true;
+        });
+        //micro.peripheralCallback = (addr: number, value: number) => { accessedPeripheral = true; }
         // bl 64
         micro.step();
         micro.step();
@@ -74,12 +68,10 @@ describe('blinker01.gcc.thumb.flash.bin program', () => {
     
     it('turns on light', () => {
         var lightOn: boolean = false;
-        micro.peripheralCallback = (addr: number, value: number) => { 
-            if (addr == 0x41004418) {
-                lightOn = true;
-            }
-        }
-        
+        micro.portA.addOutListener((mask: number, value: number) => {
+            if (((1<<17) & mask) && ((1<<17) & value)) lightOn = true;
+        });
+
         for (let i = 0; i < 50000; i++) micro.step();
 
         expect(lightOn).to.be.true;
