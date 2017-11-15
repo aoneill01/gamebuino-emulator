@@ -127,12 +127,6 @@ export class Atsamd21 {
         this.setRegister(this.spIndex, this.readRegister(this.spIndex) - 4);
     }
 
-    private setStatusRegister(arg1: number, arg2: number, result: number) {
-        this.condZ = result == 0;
-        this.condN = !!(result & 0x80000000);
-        // todo C, V
-    }
-
     private log(message: string) {
         if (this.debug) {
             console.log(message);
@@ -235,7 +229,13 @@ export class Atsamd21 {
                     case 0b1010: // CMP Rd, Rs
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`cmp r${rd}, r${rs} ; 0x${this.readRegister(rd).toString(16)} - 0x${this.readRegister(rs).toString(16)}`);
-                            this.setStatusRegister(this.readRegister(rd), this.readRegister(rs), this.readRegister(rd) - this.readRegister(rs));
+                            var rdUnsigned = (this.readRegister(rd) & 0xffffffff) >>> 0;
+                            var rsUnsigned = (this.readRegister(rs) & 0xffffffff) >>> 0;
+                            this.condC = (rdUnsigned >= rsUnsigned);
+                            this.condZ = rdUnsigned == rsUnsigned;
+                            this.condN = ((rdUnsigned - rsUnsigned) & 0x80000000) != 0;
+                            // todo condV
+                            //this.log(`c: ${this.condC}; z: ${this.condZ}; n: ${this.condN} ${((rdUnsigned - rsUnsigned) & 0x80000000)}`);
                         };
                         break;
                     default: 
@@ -315,7 +315,7 @@ export class Atsamd21 {
                 if (offset & 0b10000000) offset |= ~0b11111111;
                 offset = offset << 1;
                 switch (condition) {
-                    case 0b0000: // BEQ
+                    case 0b0000: // BEQ: branch if zero
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`beq <0x${offset.toString(16)}>`);
                             if (this.condZ) {
@@ -324,10 +324,28 @@ export class Atsamd21 {
                             }
                         };
                         break;
-                    case 0b0001: // BNE
+                    case 0b0001: // BNE: branch if not zero
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`bne <0x${offset.toString(16)}>`);
                             if (!this.condZ) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
+                        break;
+                    case 0b0010: // BCS: branch if cary set
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`bcs <0x${offset.toString(16)}>`);
+                            if (this.condC) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
+                        break;
+                    case 0b0011: // BCC: branch if cary not set
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`bcc <0x${offset.toString(16)}>`);
+                            if (!this.condC) {
                                 this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
                                 this.incrementPc();
                             }

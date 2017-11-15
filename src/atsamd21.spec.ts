@@ -10,7 +10,7 @@ fs.readFile('./Blink.ino.arduino_zero.bin', function(err, data) {
 
     var micro = new Atsamd21();
     micro.loadFlash(memory, 0x2000);
-    var count = 14;
+    var count = 30;
     for (var i = 0; i < count; i++) {
         micro.step();
     }
