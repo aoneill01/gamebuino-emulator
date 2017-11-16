@@ -106,7 +106,13 @@ export class Atsamd21 {
         }
         // Peripheral 
         else if (addr < 0x60000000) {
-            this._peripheralWriteHandlers[addr](addr, value);
+            var handler = this._peripheralWriteHandlers[addr];
+            if (handler) {
+                handler(addr, value);
+            }
+            else {
+                this.log("NO HANDLER");
+            }
         }
     }
 
@@ -301,6 +307,7 @@ export class Atsamd21 {
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`strb r${rd}, [r${rb}, 0x${offset.toString(16)}] ; addr 0x${(this.readRegister(rb) + offset).toString(16)} set to 0x${(this.readRegister(rd) & 0xff).toString(16)}`);
                             this.writeByte(this.readRegister(rb) + offset, this.readRegister(rd) & 0xff);
+                            this.log('done');
                         }
                         break;
                     default:
@@ -327,7 +334,30 @@ export class Atsamd21 {
                     };
                 }
             }
-            
+            else if ((instruction & 0b1111000000000000) == 0b1100000000000000) {
+                let load: boolean = (instruction & 0b0000100000000000) != 0;
+                let rb: number =    (instruction & 0b0000011100000000) >> 8;
+                let rlist: number = (instruction & 0b0000000011111111);
+                if (load) {
+                    
+                }
+                else {
+                    this._decodedInstructions[instructionIndex] = () => {
+                        this.log(`stmia r${rb}!, {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}lr}`);
+                        
+                        var mask = 1;
+                        var addr = this.readRegister(rb);
+                        for (var i = 0; i <= 8; i++) {
+                            if (instruction & mask) {
+                                this.writeWord(addr, this.readRegister(i));
+                                addr += 4;
+                            }
+                            mask = mask << 1;
+                        }
+                        this.setRegister(rb, addr);
+                    };
+                }
+            }
             else if ((instruction & 0b1111000000000000) == 0b1101000000000000) {
                 let condition: number = (instruction & 0b0000111100000000) >> 8;
                 let offset: number =    (instruction & 0b0000000011111111);
