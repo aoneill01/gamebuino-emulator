@@ -3,6 +3,8 @@ import { expect } from 'chai';
 import 'mocha';
 import * as fs from 'fs';
 
+
+/*
 fs.readFile('./Blink.ino.arduino_zero.bin', function(err, data) {  
     if (err) throw err;
     var memory = new Uint8Array(data.length);
@@ -10,13 +12,13 @@ fs.readFile('./Blink.ino.arduino_zero.bin', function(err, data) {
 
     var micro = new Atsamd21();
     micro.loadFlash(memory, 0x2000);
-    var count = 30;
+    var count = 40;
     for (var i = 0; i < count; i++) {
         micro.step();
     }
 });
+*/
 
-/*
 fs.readFile('./blinker01.gcc.thumb.flash.bin', function(err, data) {  
     if (err) throw err;
     var memory = new Uint8Array(data.length);
@@ -24,12 +26,12 @@ fs.readFile('./blinker01.gcc.thumb.flash.bin', function(err, data) {
 
     var micro = new Atsamd21();
     micro.loadFlash(memory);
-        var count = 48000000;
-        for (var i = 0; i < count; i++) {
-            micro.step();
-        }
+    var count = 300;
+    for (var i = 0; i < count; i++) {
+        micro.step();
+    }
 });
-
+/*
 describe('blinker01.gcc.thumb.flash.bin program', () => {
     var micro: Atsamd21;
     var flash: Uint8Array;
