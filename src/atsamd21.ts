@@ -60,6 +60,8 @@ export class Atsamd21 {
             addr -= 0x20000000;
             return this._sram[addr] | (this._sram[addr + 1] << 8);
         }
+        this.log("NO HANDLER");
+        return 0;
     }
 
     fetchWord(addr: number): number {
@@ -70,6 +72,13 @@ export class Atsamd21 {
             addr -= 0x20000000;
             return this._sram[addr] | (this._sram[addr + 1] << 8) | (this._sram[addr + 2] << 16) | (this._sram[addr + 3] << 24);
         }
+        // TODO Implement separate handler
+        if (addr == 0x4000080c) {
+            // Hack for PCLKSR
+            return 2; // XOSC32KRDY
+        }
+        this.log("NO HANDLER");
+        return 0;
     }
 
     writeWord(addr: number, value: number) {
