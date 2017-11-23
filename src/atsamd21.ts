@@ -354,13 +354,19 @@ export class Atsamd21 {
                 let rd: number =     (instruction & 0b0000000000000111);
 
                 switch (bl) {
-                    case 0b00: // STRB Rd, [Rb, #Imm]
+                    case 0b00: // STR Rd, [Rb, #Imm]
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`str r${rd}, [r${rb}, 0x${(offset << 2).toString(16)}] ; addr 0x${(this.readRegister(rb) + (offset << 2)).toString(16)} set to 0x${(this.readRegister(rd)).toString(16)}`);
                             this.writeWord(this.readRegister(rb) + (offset << 2), this.readRegister(rd));
                         }
                         break;
-                    case 0b01: // STRB Rd, [Rb, #Imm]
+                    case 0b01: // LDR Rd, [Rb, #Imm]
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`ldr r${rd}, [r${rb}, 0x${(offset << 2).toString(16)}] ; addr 0x${(this.readRegister(rb) + (offset << 2)).toString(16)} has value ${this.fetchWord(this.readRegister(rb) + (offset << 2))}`);
+                            this.setRegister(rd, this.fetchWord(this.readRegister(rb) + (offset << 2)));
+                        }
+                        break;
+                    case 0b10: // STRB Rd, [Rb, #Imm]
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`strb r${rd}, [r${rb}, 0x${offset.toString(16)}] ; addr 0x${(this.readRegister(rb) + offset).toString(16)} set to 0x${(this.readRegister(rd) & 0xff).toString(16)}`);
                             this.writeByte(this.readRegister(rb) + offset, this.readRegister(rd) & 0xff);
@@ -398,8 +404,8 @@ export class Atsamd21 {
                         this.log(`push {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}lr}`);
                         
                         var mask = 1;
-                        for (var i = 0; i <= 8; i++) {
-                            if (instruction & mask) {
+                        for (var i = 0; i < 8; i++) {
+                            if (rlist & mask) {
                                 this.pushStack(this.readRegister(i));
                             }
                             mask = mask << 1;
@@ -417,12 +423,12 @@ export class Atsamd21 {
                 }
                 else {
                     this._decodedInstructions[instructionIndex] = () => {
-                        this.log(`stmia r${rb}!, {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}lr}`);
+                        this.log(`stmia r${rb}!, {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}}`);
                         
                         var mask = 1;
                         var addr = this.readRegister(rb);
-                        for (var i = 0; i <= 8; i++) {
-                            if (instruction & mask) {
+                        for (var i = 0; i < 8; i++) {
+                            if (rlist & mask) {
                                 this.writeWord(addr, this.readRegister(i));
                                 addr += 4;
                             }
