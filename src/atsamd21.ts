@@ -66,11 +66,11 @@ export class Atsamd21 {
 
     fetchWord(addr: number): number {
         if (addr < 0x20000000) {
-            return this._flash[addr] | (this._flash[addr + 1] << 8) | (this._flash[addr + 2] << 16) | (this._flash[addr + 3] << 24);
+            return (this._flash[addr] | (this._flash[addr + 1] << 8) | (this._flash[addr + 2] << 16) | (this._flash[addr + 3] << 24)) >>> 0;
         }
         if (addr < 0x40000000) {
             addr -= 0x20000000;
-            return this._sram[addr] | (this._sram[addr + 1] << 8) | (this._sram[addr + 2] << 16) | (this._sram[addr + 3] << 24);
+            return (this._sram[addr] | (this._sram[addr + 1] << 8) | (this._sram[addr + 2] << 16) | (this._sram[addr + 3] << 24)) >>> 0;
         }
         // TODO Implement separate handler
         if (addr == 0x4000080c) {
@@ -206,11 +206,11 @@ export class Atsamd21 {
 
     private popStack(register: number) {
         this.setRegister(this.spIndex, this.readRegister(this.spIndex) + 4);
-        this.setRegister(register, this.fetchByte(this.readRegister(this.spIndex)));
-        this.log(`${this.fetchByte(this.readRegister(this.spIndex))} popped from 0x${this.readRegister(this.spIndex).toString(16)}`);
+        this.setRegister(register, this.fetchWord(this.readRegister(this.spIndex)));
+        this.log(`${this.fetchWord(this.readRegister(this.spIndex))} popped from 0x${this.readRegister(this.spIndex).toString(16)}`);
     }
 
-    private addAndSetCondition(n1: number, n2: number) {
+    private addAndSetCondition(n1: number, n2: number): number {
         var n1Unsigned = (n1 & 0xffffffff) >>> 0;
         var n2Unsigned = (n2 & 0xffffffff) >>> 0;
         var result = n1Unsigned + n2Unsigned;
@@ -219,6 +219,7 @@ export class Atsamd21 {
         this.condN = (result & 0x80000000) != 0;
         this.condV = (((n1Unsigned & 0x80000000) == (n2Unsigned & 0x80000000)) && ((n1Unsigned & 0x80000000) != (result & 0x80000000)));
         this.log(`c: ${this.condC}; z: ${this.condZ}; n: ${this.condN}; v: ${this.condV}`);
+        return result & 0xffffffff;
     }
 
     private setNZ(result: number) {
@@ -280,7 +281,7 @@ export class Atsamd21 {
                             break;
                         case 1: // LSR
                             this._decodedInstructions[instructionIndex] = () => {
-                                var result = this.readRegister(rs) >> offset;
+                                var result = this.readRegister(rs) >>> offset;
                                 this.log(`lsr r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
                                 this.setRegister(rd, result);
                                 this.condC = (this.readRegister(rs) & (1 << (32 - offset))) != 0;
@@ -288,6 +289,13 @@ export class Atsamd21 {
                             }
                             break;
                         case 2: // ASR
+                            this._decodedInstructions[instructionIndex] = () => {
+                                var result = this.readRegister(rs) >> offset;
+                                this.log(`lsr r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
+                                this.setRegister(rd, result);
+                                this.condC = (this.readRegister(rs) & (1 << (32 - offset))) != 0;
+                                this.setNZ(result);
+                            }
                             break;
                     }
                 }
@@ -298,15 +306,25 @@ export class Atsamd21 {
                         case 0b00: // ADD RN
                             this._decodedInstructions[instructionIndex] = () => {
                                 this.log(`add r${rd}, r${rs}, r${rnOffset}`);
-                                this.setRegister(rd, this.readRegister(rs) + this.readRegister(rnOffset));
-                                // TODO flags
+                                this.setRegister(rd, this.addAndSetCondition(this.readRegister(rs), this.readRegister(rnOffset)));
                             }
                             break;
                         case 0b10: // ADD Rd, Rs, #Offset3
                             this._decodedInstructions[instructionIndex] = () => {
                                 this.log(`add r${rd}, r${rs}, #${rnOffset}`);
-                                this.setRegister(rd, this.readRegister(rs) + rnOffset);
-                                // TODO flags
+                                this.setRegister(rd, this.addAndSetCondition(this.readRegister(rs), rnOffset));
+                            }
+                            break;
+                        case 0b01: // SUB Rd, Rs, Rn
+                            this._decodedInstructions[instructionIndex] = () => {
+                                this.log(`sub r${rd}, r${rs}, r${rnOffset}`);
+                                this.setRegister(rd, this.addAndSetCondition(this.readRegister(rs), -this.readRegister(rd)));
+                            }
+                            break;
+                        case 0b11: // SUB Rd, Rs, #Offset3
+                            this._decodedInstructions[instructionIndex] = () => {
+                                this.log(`sub r${rd}, r${rs}, #${rnOffset}`);
+                                this.setRegister(rd, this.addAndSetCondition(this.readRegister(rs), -rnOffset));
                             }
                             break;
                     }
@@ -333,11 +351,14 @@ export class Atsamd21 {
                     case 2: // add
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`Add immediate: rd: ${rd}, immediate value: ${immediateValue}`)
-                            this.setRegister(rd, this.readRegister(rd) + immediateValue);
-                            // TODO set flags
+                            this.setRegister(rd, this.addAndSetCondition(this.readRegister(rd), immediateValue));
                         };
                         break;
                     case 3: // sub
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`sub r${rd}, #${immediateValue}`)
+                            this.setRegister(rd, this.addAndSetCondition(this.readRegister(rd), -immediateValue));
+                        };
                         break;
                 }
             }
@@ -368,6 +389,15 @@ export class Atsamd21 {
                             this.setNZ(result);
                         };
                         break;
+                    case 0b1101: // MUL Rd, Rs ; Rd := Rd * Rs
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`mul r${rd}, r${rs}`);
+                            var result = this.readRegister(rd) * this.readRegister(rs);
+                            this.setRegister(rd, result);
+                            this.setNZ(result);
+                            // TODO V C flags
+                        };
+                        break;
                     case 0b1110: // BIC Rd, Rs ; Rd := Rd AND NOT Rs
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`bic r${rd}, r${rs}`);
@@ -389,7 +419,7 @@ export class Atsamd21 {
                 switch (opH1H2) {
                     case 0b1101:
                         this._decodedInstructions[instructionIndex] = () => {
-                            this.log(`BX ${rsHs + 8}`);
+                            this.log(`bx ${rsHs + 8}`);
                             this.setRegister(this.pcIndex, this.readRegister(rsHs + 8) & ~1); 
                             this.incrementPc();
                         };
@@ -463,6 +493,19 @@ export class Atsamd21 {
                 let l: boolean = !!(instruction & 0b0000100000000000);
                 let r: boolean = !!(instruction & 0b0000000100000000);
                 let rlist: number = 0xff & instruction;
+                if (!l && !r) {
+                    this._decodedInstructions[instructionIndex] = () => {
+                        this.log(`push {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}}`);
+                        
+                        var mask = 1;
+                        for (var i = 0; i < 8; i++) {
+                            if (rlist & mask) {
+                                this.pushStack(this.readRegister(i));
+                            }
+                            mask = mask << 1;
+                        }
+                    };
+                }
                 if (!l && r) {
                     this._decodedInstructions[instructionIndex] = () => {
                         this.log(`push {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}lr}`);
@@ -482,8 +525,22 @@ export class Atsamd21 {
                         this.log(`pop {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}pc}`);
                         
                         this.popStack(this.pcIndex);
+                        this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) & (~1)); // THUMB
                         this.incrementPc();
 
+                        var mask = 1 << 7;
+                        for (var i = 7; i >= 0; i--) {
+                            if (rlist & mask) {
+                                this.popStack(i);
+                            }
+                            mask = mask >> 1;
+                        }
+                    };
+                }
+                if (l && !r) {
+                    this._decodedInstructions[instructionIndex] = () => {
+                        this.log(`pop {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}}`);
+                        
                         var mask = 1 << 7;
                         for (var i = 7; i >= 0; i--) {
                             if (rlist & mask) {
@@ -578,10 +635,46 @@ export class Atsamd21 {
                             }
                         };
                         break;
+                    case 0b0100: // BMI: branch if N set (negative)
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`bmi <0x${offset.toString(16)}>`);
+                            if (this.condN) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
+                        break;
                     case 0b0101: // BPL: branch if N clear (positive or zero)
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`bpl <0x${offset.toString(16)}>`);
                             if (!this.condN) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
+                        break;
+                    case 0b0110: // BVS: branch if V set (overflow)
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`bvs <0x${offset.toString(16)}>`);
+                            if (this.condV) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
+                        break;
+                    case 0b0111: // BVC: branch if V clear (no overflow)
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`bvc <0x${offset.toString(16)}>`);
+                            if (!this.condV) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
+                        break;
+                    case 0b1000: // BHI: branch if C set and Z clear (unsigned higher)
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`bhi <0x${offset.toString(16)}>`);
+                            if (this.condC && !this.condZ) {
                                 this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
                                 this.incrementPc();
                             }
@@ -596,6 +689,15 @@ export class Atsamd21 {
                             }
                         };
                         break;
+                    case 0b1001: // BGE: branch if N set and V set, or N clear and V clear (greater or equal)
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`bge <0x${offset.toString(16)}>`);
+                            if (this.condN == this.condV) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
+                        break;
                     case 0b1011: // BLT: branch if N set and V clear, or N clear and V set (less than)
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`blt <0x${offset.toString(16)}>`);
@@ -605,8 +707,23 @@ export class Atsamd21 {
                             }
                         };
                         break;
-                    default:
-                        // todo
+                    case 0b1100: // BGT: branch if Z clear, and either N set and V set or N clear and V clear (greater than)
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`bgt <0x${offset.toString(16)}>`);
+                            if (!this.condZ && (this.condN == this.condV)) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
+                        break;
+                    case 0b1101: // BLE: branch if Z set, or N set and V clear, or N clear and V set (less than or equal)
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`ble <0x${offset.toString(16)}>`);
+                            if (this.condZ || (this.condN != this.condV)) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
                         break;
                 }
             }
