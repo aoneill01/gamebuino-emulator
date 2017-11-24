@@ -374,7 +374,17 @@ export class Atsamd21 {
                             this.setRegister(rd, result);
                             this.setNZ(result);
                         };
-                    break;
+                        break;
+                    case 0b0010: // LSL
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`lsl r${rd}, r${rs}`);
+                            var offset = this.readRegister(rs);
+                            var result = this.readRegister(rd) << offset;
+                            this.setRegister(rd, result);
+                            this.condC = (this.readRegister(rs) & (1 << offset)) != 0;
+                            this.setNZ(result);
+                        };
+                        break;
                     case 0b1010: // CMP Rd, Rs
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`cmp r${rd}, r${rs} ; 0x${this.readRegister(rd).toString(16)} - 0x${this.readRegister(rs).toString(16)}`);
@@ -417,9 +427,45 @@ export class Atsamd21 {
                 let rsHs: number =   (instruction & 0b0000000000111000) >> 3;
                 let rdHd: number =   (instruction & 0b0000000000000111);
                 switch (opH1H2) {
+                    case 0b0001:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`add r${rdHd}, h${rsHs + 8}`);
+                            this.setRegister(rdHd, this.addAndSetCondition(this.readRegister(rdHd), this.readRegister(rsHs + 8)));
+                        };
+                        break;
+                    case 0b0010:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`add h${rdHd + 8}, r${rsHs}`);
+                            this.setRegister(rdHd + 8, this.addAndSetCondition(this.readRegister(rdHd + 8), this.readRegister(rsHs)));
+                        };
+                        break;
+                    case 0b0011:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`add h${rdHd + 8}, h${rsHs + 8}`);
+                            this.setRegister(rdHd + 8, this.addAndSetCondition(this.readRegister(rdHd + 8), this.readRegister(rsHs + 8)));
+                        };
+                        break;
+                    case 0b1001:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`mov r${rdHd}, h${rsHs + 8}`);
+                            this.setRegister(rdHd, this.readRegister(rsHs + 8));
+                        };
+                        break;
+                    case 0b1010:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`mov h${rdHd + 8}, r${rsHs}`);
+                            this.setRegister(rdHd + 8, this.readRegister(rsHs));
+                        };
+                        break;
+                    case 0b1011:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`mov h${rdHd + 8}, h${rsHs + 8}`);
+                            this.setRegister(rdHd + 8, this.readRegister(rsHs + 8));
+                        };
+                        break;
                     case 0b1101:
                         this._decodedInstructions[instructionIndex] = () => {
-                            this.log(`bx ${rsHs + 8}`);
+                            this.log(`bx h${rsHs + 8}`);
                             this.setRegister(this.pcIndex, this.readRegister(rsHs + 8) & ~1); 
                             this.incrementPc();
                         };
@@ -437,6 +483,55 @@ export class Atsamd21 {
                     this.log(`ldr r${rd}, [pc, #${immediateValue}] ; read value: 0x${readValue.toString(16)} from addr 0x${((this.readRegister(this.pcIndex) & ~0b10) + immediateValue).toString(16)}`);
                     this.setRegister(rd, readValue);
                 };
+            }
+            else if ((instruction & 0b1111001000000000) == 0b0101000000000000) {
+                let lb: number =     (instruction & 0b0000110000000000) >> 10;
+                let ro: number =     (instruction & 0b0000000111000000) >> 6;
+                let rb: number =     (instruction & 0b0000000000111000) >> 3;
+                let rd: number =     (instruction & 0b0000000000000111);
+                switch (lb) {
+                    case 0b00:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`str r${rd}, [r${rb}, r${ro}]`);
+                            this.writeWord(this.readRegister(rb) + this.readRegister(ro), this.readRegister(rd));
+                        }
+                        break;
+                    case 0b01:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`strb r${rd}, [r${rb}, r${ro}]`);
+                            this.writeByte(this.readRegister(rb) + this.readRegister(ro), this.readRegister(rd));
+                        }
+                        break;
+                    case 0b10:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`ldr r${rd}, [r${rb}, r${ro}]`);
+                            this.setRegister(rd, this.fetchWord(this.readRegister(rb) + this.readRegister(ro)));
+                        }
+                        break;
+                    case 0b11:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`ldrb r${rd}, [r${rb}, r${ro}]`);
+                            this.setRegister(rd, this.fetchByte(this.readRegister(rb) + this.readRegister(ro)));
+                        }
+                        break;
+                }
+            }
+            else if ((instruction & 0b1111001000000000) == 0b0101001000000000) {
+                let hs: number =     (instruction & 0b0000110000000000) >> 10;
+                let ro: number =     (instruction & 0b0000000111000000) >> 6;
+                let rb: number =     (instruction & 0b0000000000111000) >> 3;
+                let rd: number =     (instruction & 0b0000000000000111);
+
+                switch (hs) {
+                    case 0b01:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`ldsb r${rd}, [r${rb}, r${ro}]`);
+                            var result = this.fetchByte(this.readRegister(rb) + this.readRegister(ro));
+                            if (result & 0x80) result = result | (~0xff);
+                            this.setRegister(rd, result);
+                        };
+                        break;
+                }
             }
             else if ((instruction & 0b1110000000000000) == 0b0110000000000000) {
                 let bl: number =     (instruction & 0b0001100000000000) >> 11;
