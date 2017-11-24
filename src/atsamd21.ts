@@ -75,7 +75,24 @@ export class Atsamd21 {
         // TODO Implement separate handler
         if (addr == 0x4000080c) {
             // Hack for PCLKSR
-            return 2; // XOSC32KRDY
+            return 0b11010010; // DFLLLCKC, DFLLLCKF, DFLLRDY, XOSC32KRDY
+        }
+        this.log("NO HANDLER");
+        return 0;
+    }
+
+    fetchByte(addr: number): number {
+        if (addr < 0x20000000) {
+            return this._flash[addr];
+        }
+        if (addr < 0x40000000) {
+            addr -= 0x20000000;
+            return this._sram[addr];
+        }
+        // TODO Implement separate handler
+        if (addr == 0x40000c00) {
+            // Hack for GCLK CTRL
+            return 0; // There is no reset operation ongoing
         }
         this.log("NO HANDLER");
         return 0;
@@ -181,8 +198,16 @@ export class Atsamd21 {
     }
 
     private pushStack(value: number) {
+        // TODO: Should SP be decremented before writing?
         this.writeWord(this.readRegister(this.spIndex), value);
+        this.log(`${value} pushed to 0x${this.readRegister(this.spIndex).toString(16)}`);
         this.setRegister(this.spIndex, this.readRegister(this.spIndex) - 4);
+    }
+
+    private popStack(register: number) {
+        this.setRegister(this.spIndex, this.readRegister(this.spIndex) + 4);
+        this.setRegister(register, this.fetchByte(this.readRegister(this.spIndex)));
+        this.log(`${this.fetchByte(this.readRegister(this.spIndex))} popped from 0x${this.readRegister(this.spIndex).toString(16)}`);
     }
 
     private addAndSetCondition(n1: number, n2: number) {
@@ -192,8 +217,13 @@ export class Atsamd21 {
         this.condC = result > 0xffffffff;
         this.condZ = (result & 0xffffffff) == 0;
         this.condN = (result & 0x80000000) != 0;
-        // todo condV
+        this.condV = (((n1Unsigned & 0x80000000) == (n2Unsigned & 0x80000000)) && ((n1Unsigned & 0x80000000) != (result & 0x80000000)));
         this.log(`c: ${this.condC}; z: ${this.condZ}; n: ${this.condN}; v: ${this.condV}`);
+    }
+
+    private setNZ(result: number) {
+        this.condN = result < 0;
+        this.condZ = result == 0;
     }
 
     private log(message: string) {
@@ -245,11 +275,17 @@ export class Atsamd21 {
                                 this.log(`lsl r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
                                 this.setRegister(rd, result);
                                 this.condC = (this.readRegister(rs) & (1 << offset)) != 0;
-                                this.condZ = (result & 0xffffffff) == 0;
-                                this.condN = (result & 0x80000000) != 0;
+                                this.setNZ(result);
                             }
                             break;
                         case 1: // LSR
+                            this._decodedInstructions[instructionIndex] = () => {
+                                var result = this.readRegister(rs) >> offset;
+                                this.log(`lsr r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
+                                this.setRegister(rd, result);
+                                this.condC = (this.readRegister(rs) & (1 << (32 - offset))) != 0;
+                                this.setNZ(result);
+                            }
                             break;
                         case 2: // ASR
                             break;
@@ -289,6 +325,10 @@ export class Atsamd21 {
                         };
                         break;
                     case 1: // cmp
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`cmp r${rd}, #${immediateValue} ; #${this.readRegister(rd)}`);
+                            this.addAndSetCondition(this.readRegister(rd), -immediateValue);
+                        };
                         break;
                     case 2: // add
                         this._decodedInstructions[instructionIndex] = () => {
@@ -306,6 +346,14 @@ export class Atsamd21 {
                 let rs: number =     (instruction & 0b0000000000111000) >> 3;
                 let rd: number =     (instruction & 0b0000000000000111);
                 switch (opcode) {
+                    case 0b0000: // AND
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`and r${rd}, r${rs}`);
+                            var result = this.readRegister(rd) & this.readRegister(rs);
+                            this.setRegister(rd, result);
+                            this.setNZ(result);
+                        };
+                    break;
                     case 0b1010: // CMP Rd, Rs
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`cmp r${rd}, r${rs} ; 0x${this.readRegister(rd).toString(16)} - 0x${this.readRegister(rs).toString(16)}`);
@@ -315,13 +363,17 @@ export class Atsamd21 {
                     case 0b1100: // ORR Rd, Rs ; Rd := Rd OR Rs
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`orr r${rd}, r${rs}`);
-                            this.setRegister(rd, this.readRegister(rd) | this.readRegister(rs));
+                            var result = this.readRegister(rd) | this.readRegister(rs);
+                            this.setRegister(rd, result);
+                            this.setNZ(result);
                         };
                         break;
                     case 0b1110: // BIC Rd, Rs ; Rd := Rd AND NOT Rs
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`bic r${rd}, r${rs}`);
-                            this.setRegister(rd, this.readRegister(rd) & ~this.readRegister(rs));
+                            var result = this.readRegister(rd) & ~this.readRegister(rs);
+                            this.setRegister(rd, result);
+                            this.setNZ(result);
                         };
                         break;
                     default: 
@@ -381,8 +433,11 @@ export class Atsamd21 {
                             this.writeByte(this.readRegister(rb) + offset, this.readRegister(rd) & 0xff);
                         }
                         break;
-                    default:
-                        // todo
+                    case 0b11: 
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`ldrb r${rd}, [r${rb}, 0x${offset.toString(16)}] ; addr 0x${(this.readRegister(rb) + offset).toString(16)} has value ${this.fetchByte(this.readRegister(rb) + offset)}`);
+                            this.setRegister(rd, this.fetchByte(this.readRegister(rb) + offset));
+                        }
                         break;
                 }
             }
@@ -421,6 +476,39 @@ export class Atsamd21 {
                         }
                         this.pushStack(this.readRegister(this.lrIndex));
                     };
+                }
+                if (l && r) {
+                    this._decodedInstructions[instructionIndex] = () => {
+                        this.log(`pop {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}pc}`);
+                        
+                        this.popStack(this.pcIndex);
+                        this.incrementPc();
+
+                        var mask = 1 << 7;
+                        for (var i = 7; i >= 0; i--) {
+                            if (rlist & mask) {
+                                this.popStack(i);
+                            }
+                            mask = mask >> 1;
+                        }
+                    };
+                }
+            }
+            else if ((instruction & 0b1111111100000000) == 0b1011001000000000) {
+                let opcode: number = (instruction & 0b0000000011000000) >> 6;
+                let rm: number =     (instruction & 0b0000000000111000) >> 3;
+                let rd: number =     (instruction & 0b0000000000000111);
+                switch (opcode) {
+                    case 0b01: // signed extend byte
+                        this._decodedInstructions[instructionIndex] = () => {
+                            var result = this.readRegister(rm) & 0xff;
+                            if (result & 0x80) {
+                                result = (~0xff) | result;
+                            }
+                            this.setRegister(rd, result);
+                            this.log(`stxb r${rd}, r${rm} ; ${result.toString(16)}`);
+                        };
+                        break;
                 }
             }
             else if ((instruction & 0b1111000000000000) == 0b1100000000000000) {
@@ -503,6 +591,15 @@ export class Atsamd21 {
                         this._decodedInstructions[instructionIndex] = () => {
                             this.log(`bls <0x${offset.toString(16)}>`);
                             if (!this.condC || this.condZ) {
+                                this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
+                                this.incrementPc();
+                            }
+                        };
+                        break;
+                    case 0b1011: // BLT: branch if N set and V clear, or N clear and V set (less than)
+                        this._decodedInstructions[instructionIndex] = () => {
+                            this.log(`blt <0x${offset.toString(16)}>`);
+                            if (this.condN != this.condV) {
                                 this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + offset);
                                 this.incrementPc();
                             }
