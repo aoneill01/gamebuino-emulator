@@ -198,16 +198,15 @@ export class Atsamd21 {
     }
 
     private pushStack(value: number) {
-        // TODO: Should SP be decremented before writing?
+        this.setRegister(this.spIndex, this.readRegister(this.spIndex) - 4);
         this.writeWord(this.readRegister(this.spIndex), value);
         this.log(`${value} pushed to 0x${this.readRegister(this.spIndex).toString(16)}`);
-        this.setRegister(this.spIndex, this.readRegister(this.spIndex) - 4);
     }
 
     private popStack(register: number) {
-        this.setRegister(this.spIndex, this.readRegister(this.spIndex) + 4);
         this.setRegister(register, this.fetchWord(this.readRegister(this.spIndex)));
         this.log(`${this.fetchWord(this.readRegister(this.spIndex))} popped from 0x${this.readRegister(this.spIndex).toString(16)}`);
+        this.setRegister(this.spIndex, this.readRegister(this.spIndex) + 4);
     }
 
     private addAndSetCondition(n1: number, n2: number): number {
@@ -592,12 +591,12 @@ export class Atsamd21 {
                     this._decodedInstructions[instructionIndex] = () => {
                         this.log(`push {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}}`);
                         
-                        var mask = 1;
-                        for (var i = 0; i < 8; i++) {
+                        var mask = 1 << 7;
+                        for (var i = 7; i >= 0; i--) {
                             if (rlist & mask) {
                                 this.pushStack(this.readRegister(i));
                             }
-                            mask = mask << 1;
+                            mask = mask >> 1;
                         }
                     };
                 }
@@ -605,43 +604,44 @@ export class Atsamd21 {
                     this._decodedInstructions[instructionIndex] = () => {
                         this.log(`push {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}lr}`);
                         
-                        var mask = 1;
-                        for (var i = 0; i < 8; i++) {
+                        this.pushStack(this.readRegister(this.lrIndex));
+
+                        var mask = 1 << 7;
+                        for (var i = 7; i >= 0; i--) {
                             if (rlist & mask) {
                                 this.pushStack(this.readRegister(i));
                             }
-                            mask = mask << 1;
+                            mask = mask >> 1;
                         }
-                        this.pushStack(this.readRegister(this.lrIndex));
                     };
                 }
                 if (l && r) {
                     this._decodedInstructions[instructionIndex] = () => {
                         this.log(`pop {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}pc}`);
                         
-                        this.popStack(this.pcIndex);
-                        this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) & (~1)); // THUMB
-                        this.incrementPc();
-
-                        var mask = 1 << 7;
-                        for (var i = 7; i >= 0; i--) {
+                        var mask = 1;
+                        for (var i = 0; i < 8; i++) {
                             if (rlist & mask) {
                                 this.popStack(i);
                             }
-                            mask = mask >> 1;
+                            mask = mask << 1;
                         }
+
+                        this.popStack(this.pcIndex);
+                        this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) & (~1)); // THUMB
+                        this.incrementPc();
                     };
                 }
                 if (l && !r) {
                     this._decodedInstructions[instructionIndex] = () => {
                         this.log(`pop {${(rlist & (1<<0)) ? 'r0, ' : ''}${(rlist & (1<<1)) ? 'r1, ' : ''}${(rlist & (1<<2)) ? 'r2, ' : ''}${(rlist & (1<<3)) ? 'r3, ' : ''}${(rlist & (1<<4)) ? 'r4, ' : ''}${(rlist & (1<<5)) ? 'r5, ' : ''}${(rlist & (1<<6)) ? 'r6, ' : ''}${(rlist & (1<<7)) ? 'r7, ' : ''}}`);
                         
-                        var mask = 1 << 7;
-                        for (var i = 7; i >= 0; i--) {
+                        var mask = 1;
+                        for (var i = 0; i < 8; i++) {
                             if (rlist & mask) {
                                 this.popStack(i);
                             }
-                            mask = mask >> 1;
+                            mask = mask << 1;
                         }
                     };
                 }
