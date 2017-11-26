@@ -1,14 +1,101 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Test</title>
+    <meta charset="UTF-8">
+    <title>Test</title>
+    <style>
+        .led {
+            width: 10px;
+            height: 10px;
+            border: 1px solid gray;
+            margin: 0 auto;
+            border-radius: 50%;
+        }
 
+        .on {
+            background-color: red;
+            border: 1px solid darkred;
+            box-shadow: 0 0 8px red;
+        }
+    </style>
 </head>
 
 <body>
     <div id="rate"></div>
-    <div id="light"></div>
+    <table>
+        <thead>
+            <tr>
+                <th>PA31</th>
+                <th>PA30</th>
+                <th>PA29</th>
+                <th>PA28</th>
+                <th>PA27</th>
+                <th>PA26</th>
+                <th>PA25</th>
+                <th>PA24</th>
+                <th>PA23</th>
+                <th>PA22</th>
+                <th>PA21</th>
+                <th>PA20</th>
+                <th>PA19</th>
+                <th>PA18</th>
+                <th>PA17</th>
+                <th>PA16</th>
+                <th>PA15</th>
+                <th>PA14</th>
+                <th>PA13</th>
+                <th>PA12</th>
+                <th>PA11</th>
+                <th>PA00</th>
+                <th>PA09</th>
+                <th>PA08</th>
+                <th>PA07</th>
+                <th>PA06</th>
+                <th>PA05</th>
+                <th>PA04</th>
+                <th>PA03</th>
+                <th>PA02</th>
+                <th>PA01</th>
+                <th>PA00</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><div id="pa31" class="led"></div></td>
+                <td><div id="pa30" class="led"></div></td>
+                <td><div id="pa29" class="led"></div></td>
+                <td><div id="pa28" class="led"></div></td>
+                <td><div id="pa27" class="led"></div></td>
+                <td><div id="pa26" class="led"></div></td>
+                <td><div id="pa25" class="led"></div></td>
+                <td><div id="pa24" class="led"></div></td>
+                <td><div id="pa23" class="led"></div></td>
+                <td><div id="pa22" class="led"></div></td>
+                <td><div id="pa21" class="led"></div></td>
+                <td><div id="pa20" class="led"></div></td>
+                <td><div id="pa19" class="led"></div></td>
+                <td><div id="pa18" class="led"></div></td>
+                <td><div id="pa17" class="led"></div></td>
+                <td><div id="pa16" class="led"></div></td>
+                <td><div id="pa15" class="led"></div></td>
+                <td><div id="pa14" class="led"></div></td>
+                <td><div id="pa13" class="led"></div></td>
+                <td><div id="pa12" class="led"></div></td>
+                <td><div id="pa11" class="led"></div></td>
+                <td><div id="pa10" class="led"></div></td>
+                <td><div id="pa09" class="led"></div></td>
+                <td><div id="pa08" class="led"></div></td>
+                <td><div id="pa07" class="led"></div></td>
+                <td><div id="pa06" class="led"></div></td>
+                <td><div id="pa05" class="led"></div></td>
+                <td><div id="pa04" class="led"></div></td>
+                <td><div id="pa03" class="led"></div></td>
+                <td><div id="pa02" class="led"></div></td>
+                <td><div id="pa01" class="led"></div></td>
+                <td><div id="pa00" class="led"></div></td>
+            </tr>
+        </tbody>
+    </table>
     <script src="bundle.js"></script>
 </body>
 
