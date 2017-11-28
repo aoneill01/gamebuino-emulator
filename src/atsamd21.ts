@@ -9,6 +9,7 @@ export class Atsamd21 {
     private _decodedInstructions: {():void}[] = [];
 
     private _sysTickTrigger: number = 0;
+    tickCount: number = 0;
 
     registers: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
@@ -208,6 +209,7 @@ export class Atsamd21 {
 
     private incrementPc() {
         this._sysTickTrigger++;
+        this.tickCount++;
         this.registers[this.pcIndex]+=2;
         // this.setRegister(this.pcIndex, this.readRegister(this.pcIndex) + 2);
     }

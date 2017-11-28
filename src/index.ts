@@ -28,11 +28,12 @@ var total:number = 0;
 
 function run() {
     const loopCount = 480000;
+    var priorTick = atsamd21.tickCount;
     var count = loopCount;
     for (var i = 0; i < count; i++) {
         atsamd21.step();
     }
-    total += loopCount;
+    total += atsamd21.tickCount - priorTick;
 
     setTimeout(run, 0);
 }
