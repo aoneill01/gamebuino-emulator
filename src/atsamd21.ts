@@ -9,6 +9,7 @@ export class Atsamd21 {
     private _decodedInstructions: {():void}[] = [];
 
     private _sysTickTrigger: number = 0;
+    private _sysTickVector: number;
     tickCount: number = 0;
 
     registers: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -257,19 +258,51 @@ export class Atsamd21 {
         // pc one instruction ahead due to pipeline.
         this.incrementPc();
         // this.incrementPc();
+        this._sysTickVector = this.fetchWord(0x003C + offset) & ~1;
+        console.log(`sysTickVector: 0x${this._sysTickVector.toString(16)}`);
     }
 
     step() {
-        // TODO Implement as an interrupt. Right now it is hard-coded to work with a specific program.
         if (this._sysTickTrigger >= 48000) {
-            // this.log('sysTickHandler');
-            var ulTickCount = this.fetchWord(0x20000288);
-            this.writeWord(0x20000288, ((ulTickCount + 1) & 0xffffffff) >>> 0);
             this._sysTickTrigger = 0;
+            // this.log('sysTickHandler');
+            // TODO better implementation for CPSR 
+            this.pushStack((this.condC ? 1 : 0) | (this.condN ? 2 : 0) | (this.condV ? 4 : 0) | (this.condZ ? 8 : 0));
+            this.pushStack(this.readRegister(this.pcIndex));
+            this.pushStack(this.readRegister(this.lrIndex));
+            this.pushStack(this.readRegister(12));
+            this.pushStack(this.readRegister(3));
+            this.pushStack(this.readRegister(2));
+            this.pushStack(this.readRegister(1));
+            this.pushStack(this.readRegister(0));
+            this.setRegister(this.pcIndex, this._sysTickVector);
+            this.setRegister(this.lrIndex, 0xfffffff9);
+            this.incrementPc();
+        }
+
+        var instAddr = this.readRegister(this.pcIndex) - 2;
+
+        if (instAddr == (0xfffffff8 | 0)) {
+            // this.log(`sysTickHandler done ${this.fetchWord(0x20000288)}`);
+            this.popStack(0);
+            this.popStack(1);
+            this.popStack(2);
+            this.popStack(3);
+            this.popStack(12);
+            this.popStack(this.lrIndex);
+            this.popStack(this.pcIndex);
+            // TODO better implementation for CPSR 
+            var cnvz = this.fetchWord(this.readRegister(this.spIndex));
+            this.condC = (cnvz & 1) ? true : false;
+            this.condN = (cnvz & 2) ? true : false;
+            this.condV = (cnvz & 4) ? true : false;
+            this.condZ = (cnvz & 8) ? true : false;
+            this.setRegister(this.spIndex, this.readRegister(this.spIndex) + 4); 
+            instAddr = this.readRegister(this.pcIndex) - 2;
         }
 
         // this.log(`; 0x${(this.readRegister(this.pcIndex) - 2).toString(16)}: 0x${this.fetchHalfword(this.readRegister(this.pcIndex) - 2).toString(16)}`);
-        var instructionHandler = this._decodedInstructions[this.readRegister(this.pcIndex) - 2];
+        var instructionHandler = this._decodedInstructions[instAddr];
         this.incrementPc();
         instructionHandler();
     }

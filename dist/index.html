@@ -96,6 +96,25 @@
             </tr>
         </tbody>
     </table>
+    <pre>// the setup function runs once when you press reset or power the board
+void setup() {
+    pinMode(11, OUTPUT);
+    pinMode(13, OUTPUT);
+    pinMode(10, OUTPUT);
+    pinMode(12, OUTPUT);
+}
+
+int count = 0;
+
+// the loop function runs over and over again forever
+void loop() {
+    digitalWrite(11, (count & 1) ? HIGH : LOW);
+    digitalWrite(13, (count & 2) ? HIGH : LOW);
+    digitalWrite(10, (count & 4) ? HIGH : LOW);
+    digitalWrite(12, (count & 8) ? HIGH : LOW);
+    delay(100);
+    count++;
+}</pre>
     <script src="bundle.js"></script>
 </body>
 
