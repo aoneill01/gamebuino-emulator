@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import 'mocha';
 import * as fs from 'fs';
 
-fs.readFile('./Blink.ino.arduino_zero.bin', function(err, data) {  
+fs.readFile('./graphicstest.ino.arduino_zero.bin', function(err, data) {  
     if (err) throw err;
     var memory = new Uint8Array(data.length);
     for (let i = 0; i < data.length; i++) memory[i] = data[i];
