@@ -4,23 +4,18 @@ var flash = new Uint8Array(10016);
 
 var oReq = new XMLHttpRequest();
 var atsamd21 = new Atsamd21();
+import { St7735 } from './st7735';
 
 oReq.onload = function(e) {
     atsamd21.loadFlash(new Uint8Array(oReq.response), 0x2000);
-    atsamd21.portA.addOutListener((mask: number, value: number) => {
-        // console.log(`mask: ${mask.toString(2)}; value: ${value.toString(2)}`);
 
-        var mask = 1;
-        for (var i = 0; i < 32; i++) {
-            var id = `pa${i < 10 ? '0' + i : i}`;
-            document.getElementById(id).className = (mask & value) ? 'led on' : 'led';
-            mask = mask << 1;
-        }
-    });
+    var canvas = <HTMLCanvasElement>document.getElementById('screen');
+    var ctx = canvas.getContext("2d");
+    var screen = new St7735(atsamd21.sercom4, atsamd21.portA, ctx);
 
     run();
 }
-oReq.open("GET", "Blink.ino.arduino_zero.bin");
+oReq.open("GET", "graphicstest.ino.bin");
 oReq.responseType = "arraybuffer";
 oReq.send();
 
