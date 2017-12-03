@@ -100,4 +100,8 @@ export class PortRegister {
             });
         }
     }
+
+    getOut() {
+        return this._out;
+    }
 }

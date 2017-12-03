@@ -2,17 +2,19 @@ import { Atsamd21 } from './atsamd21';
 import { expect } from 'chai';
 import 'mocha';
 import * as fs from 'fs';
+import { St7735 } from './st7735';
 
-fs.readFile('./graphicstest.ino.arduino_zero.bin', function(err, data) {  
+fs.readFile('./graphicstest.ino.bin', function(err, data) {  
     if (err) throw err;
     var memory = new Uint8Array(data.length);
     for (let i = 0; i < data.length; i++) memory[i] = data[i];
 
     var micro = new Atsamd21();
     micro.loadFlash(memory, 0x2000);
-    micro.portA.addOutListener((mask: number, value: number) => {
-        console.log(`mask: ${mask.toString(2)}; value: ${value.toString(2)}`);
-    });
+    var screen = new St7735(micro.sercom4, micro.portA);
+    //micro.portA.addOutListener((mask: number, value: number) => {
+    //    console.log(`mask: ${mask.toString(2)}; value: ${value.toString(2)}`);
+    //});
     var count = 480000000;
     for (var i = 0; i < count; i++) {
         micro.step();

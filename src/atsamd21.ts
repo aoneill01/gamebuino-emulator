@@ -1,4 +1,5 @@
 import { PortRegister } from "./port-register";
+import { SercomRegister } from "./sercom-register";
 
 const PORTA_OFFSET: number = 0x41004400;
 const PORTB_OFFSET: number = 0x41004480;
@@ -24,6 +25,7 @@ export class Atsamd21 {
 
     portA: PortRegister;
     portB: PortRegister;
+    sercom4: SercomRegister;
     
     cycleCount: number = 0;
 
@@ -44,6 +46,7 @@ export class Atsamd21 {
         
         this.portA = new PortRegister(PORTA_OFFSET, this);
         this.portB = new PortRegister(PORTB_OFFSET, this);
+        this.sercom4 = new SercomRegister(4, this);
     }
 
     loadFlash(contents: Uint8Array, offset: number = 0) {
@@ -105,12 +108,22 @@ export class Atsamd21 {
             addr -= 0x20000000;
             return this._sram[addr];
         }
-        // TODO Implement separate handler
-        if (addr == 0x40000c00) {
-            // Hack for GCLK CTRL
-            return 0; // There is no reset operation ongoing
+        // Peripheral 
+        else if (addr < 0x60000000) {
+            if (addr == 0x40000c00) {
+                // Hack for GCLK CTRL
+                return 0; // There is no reset operation ongoing
+            }
+
+            var handler = this._peripheralReadHandlers[addr];
+            if (handler) {
+                return handler(addr);
+            }
+            else {
+                // this.log(`NO HANDLER for 0x${addr.toString(16)}`);
+            }
         }
-        // this.log("NO HANDLER");
+        // this.log(`NO HANDLER 0x${addr.toString(16)}`);
         return 0;
     }
 
@@ -125,6 +138,9 @@ export class Atsamd21 {
         }
         // SRAM
         else if (addr < 0x40000000) {
+            /*if (addr == 0x20007f18) {
+                console.log(`DEBUG ${this._tmpAddr.toString(16)} wrote ${value.toString(16)}`);
+            }*/
             addr -= 0x20000000;
             this._sram[addr] = value & 0xff;
             this._sram[addr + 1] = (value >> 8) & 0xff;
@@ -259,8 +275,10 @@ export class Atsamd21 {
         this.incrementPc();
         // this.incrementPc();
         this._sysTickVector = this.fetchWord(0x003C + offset) & ~1;
-        console.log(`sysTickVector: 0x${this._sysTickVector.toString(16)}`);
+        // console.log(`sysTickVector: 0x${this._sysTickVector.toString(16)}`);
     }
+
+    private _tmpAddr: number;
 
     step() {
         if (this._sysTickTrigger >= 48000) {
@@ -301,8 +319,18 @@ export class Atsamd21 {
             instAddr = this.readRegister(this.pcIndex) - 2;
         }
 
+        //if ((instAddr >= 0x3c10 && instAddr <= 0x3c34)/* || (instAddr >= 0x3db8 && instAddr <= 0x3e42) || (instAddr >= 0x4428 && instAddr <= 0x442c) || (instAddr >= 0x3a30 && instAddr <= 0x3a48)*/) {
+        //    console.log(`xxx ${instAddr.toString(16)} r0: ${this.readRegister(0).toString(16)}, r1: ${this.readRegister(1).toString(16)}, r2: ${this.readRegister(2).toString(16)}, r3: ${this.readRegister(3).toString(16)}, r4: ${this.readRegister(4).toString(16)}, r5: ${this.readRegister(5).toString(16)}`);
+        //}
+        //if (instAddr == 0x3a30) {
+        //    console.log(`width: ${this.fetchHalfword(0x2000012c + 12).toString(16)}, height: ${this.fetchHalfword(0x2000012c + 14).toString(16)}`)
+        //}
         // this.log(`; 0x${(this.readRegister(this.pcIndex) - 2).toString(16)}: 0x${this.fetchHalfword(this.readRegister(this.pcIndex) - 2).toString(16)}`);
         var instructionHandler = this._decodedInstructions[instAddr];
+        if (!instructionHandler) {
+            this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}`);
+        }
+        this._tmpAddr = instAddr;
         this.incrementPc();
         instructionHandler();
     }
@@ -627,6 +655,7 @@ export class Atsamd21 {
                         };
                         break;
                     case 0b1110:
+                    case 0b1111:
                         this._decodedInstructions[instructionIndex] = () => {
                             // this.log(`blx r${rm}`);
                             this.setRegister(this.lrIndex, (this.readRegister(this.pcIndex) - 2) | 1);
@@ -687,12 +716,20 @@ export class Atsamd21 {
                 let rd: number =     (instruction & 0b0000000000000111);
 
                 switch (hs) {
-                    // TODO strh, ldrh, ldsh
+                    // TODO strh and ldrh
                     case 0b01:
                         this._decodedInstructions[instructionIndex] = () => {
                             // this.log(`ldsb r${rd}, [r${rb}, r${ro}]`);
                             var result = this.fetchByte(this.readRegister(rb) + this.readRegister(ro));
                             if (result & 0x80) result = result | (~0xff);
+                            this.setRegister(rd, result);
+                        };
+                        break;
+                    case 0b11:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            // this.log(`ldsh r${rd}, [r${rb}, r${ro}]`);
+                            var result = this.fetchHalfword(this.readRegister(rb) + this.readRegister(ro));
+                            if (result & 0x8000) result = result | (~0xffff);
                             this.setRegister(rd, result);
                         };
                         break;
@@ -740,14 +777,15 @@ export class Atsamd21 {
                 let rd: number =     (instruction & 0b0000000000000111);
                 if (l) {
                     this._decodedInstructions[instructionIndex] = () => {
-                        // this.log(`strh r${rd}, [r${rb}, 0x${(offset << 1).toString(16)}] ; addr 0x${(this.readRegister(rb) + (offset << 1)).toString(16)} set to 0x${(0xffff & this.readRegister(rd)).toString(16)}`);
-                        this.writeHalfword(this.readRegister(rb) + (offset << 1), this.readRegister(rd));
+                        // this.log(`ldrh r${rd}, [r${rb}, 0x${(offset << 1).toString(16)}]`);
+                        this.setRegister(rd, 0xffff & this.fetchHalfword(this.readRegister(rb) + (offset << 1)));
+                        
                     }
                 }
                 else {
                     this._decodedInstructions[instructionIndex] = () => {
-                        // this.log(`ldrh r${rd}, [r${rb}, 0x${(offset << 1).toString(16)}]`);
-                        this.setRegister(rd, 0xffff & this.fetchHalfword(this.readRegister(rb) + (offset << 1)));
+                        // this.log(`strh r${rd}, [r${rb}, 0x${(offset << 1).toString(16)}] ; addr 0x${(this.readRegister(rb) + (offset << 1)).toString(16)} set to 0x${(0xffff & this.readRegister(rd)).toString(16)}`);
+                        this.writeHalfword(this.readRegister(rb) + (offset << 1), this.readRegister(rd));
                     }
                 }
             }
@@ -803,6 +841,16 @@ export class Atsamd21 {
                 let rm: number =     (instruction & 0b0000000000111000) >> 3;
                 let rd: number =     (instruction & 0b0000000000000111);
                 switch (opcode) {
+                    case 0b00: // signed extend halfword
+                        this._decodedInstructions[instructionIndex] = () => {
+                            var result = this.readRegister(rm) & 0xffff;
+                            if (result & 0x8000) {
+                                result = (~0xffff) | result;
+                            }
+                            this.setRegister(rd, result);
+                            // this.log(`sxth r${rd}, r${rm} ; ${result.toString(16)}`);
+                        };
+                        break;
                     case 0b01: // signed extend byte
                         this._decodedInstructions[instructionIndex] = () => {
                             var result = this.readRegister(rm) & 0xff;
@@ -810,7 +858,14 @@ export class Atsamd21 {
                                 result = (~0xff) | result;
                             }
                             this.setRegister(rd, result);
-                            // this.log(`stxb r${rd}, r${rm} ; ${result.toString(16)}`);
+                            // this.log(`sxtb r${rd}, r${rm} ; ${result.toString(16)}`);
+                        };
+                        break;
+                    case 0b10: // unsigned extend halfword
+                        this._decodedInstructions[instructionIndex] = () => {
+                            var result = this.readRegister(rm) & 0xffff;
+                            this.setRegister(rd, result);
+                            // this.log(`uxth r${rd}, r${rm} ; ${result.toString(16)}`);
                         };
                         break;
                     case 0b11: // unsigned extend byte
