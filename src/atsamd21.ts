@@ -26,6 +26,7 @@ export class Atsamd21 {
     portA: PortRegister;
     portB: PortRegister;
     sercom4: SercomRegister;
+    sercom5: SercomRegister;
     
     cycleCount: number = 0;
 
@@ -47,6 +48,7 @@ export class Atsamd21 {
         this.portA = new PortRegister(PORTA_OFFSET, this);
         this.portB = new PortRegister(PORTB_OFFSET, this);
         this.sercom4 = new SercomRegister(4, this);
+        this.sercom5 = new SercomRegister(5, this);
     }
 
     loadFlash(contents: Uint8Array, offset: number = 0) {
@@ -154,7 +156,7 @@ export class Atsamd21 {
                 handler(addr, value);
             }
             else {
-                // this.log("NO HANDLER");
+                // this.log(`NO HANDLER for 0x${addr.toString(16)} ${"" + value}`);
             }
         }
     }
@@ -182,7 +184,7 @@ export class Atsamd21 {
                 handler(addr, value);
             }
             else {
-                // this.log("NO HANDLER");
+                // this.log(`NO HANDLER for 0x${addr.toString(16)} ${"" + value}`);
             }
         }
     }
@@ -203,7 +205,7 @@ export class Atsamd21 {
                 handler(addr, value);
             }
             else {
-                // this.log("NO HANDLER");
+                // this.log(`NO HANDLER for 0x${addr.toString(16)} ${"" + value}`);
             }
         }
     }
@@ -247,6 +249,18 @@ export class Atsamd21 {
         var n1Unsigned = (n1 & 0xffffffff) >>> 0;
         var n2Unsigned = (n2 & 0xffffffff) >>> 0;
         var result = n1Unsigned + n2Unsigned;
+        this.condC = result > 0xffffffff;
+        this.condZ = (result & 0xffffffff) == 0;
+        this.condN = (result & 0x80000000) != 0;
+        this.condV = (((n1Unsigned & 0x80000000) == (n2Unsigned & 0x80000000)) && ((n1Unsigned & 0x80000000) != (result & 0x80000000)));
+        // this.log(`c: ${this.condC}; z: ${this.condZ}; n: ${this.condN}; v: ${this.condV}`);
+        return result & 0xffffffff;
+    }
+
+    private addAndSetCondition2(n1: number, n2: number, carry: number): number {
+        var n1Unsigned = (n1 & 0xffffffff) >>> 0;
+        var n2Unsigned = (n2 & 0xffffffff) >>> 0;
+        var result = n1Unsigned + n2Unsigned + carry;
         this.condC = result > 0xffffffff;
         this.condZ = (result & 0xffffffff) == 0;
         this.condN = (result & 0x80000000) != 0;
@@ -319,16 +333,16 @@ export class Atsamd21 {
             instAddr = this.readRegister(this.pcIndex) - 2;
         }
 
-        //if ((instAddr >= 0x3c10 && instAddr <= 0x3c34)/* || (instAddr >= 0x3db8 && instAddr <= 0x3e42) || (instAddr >= 0x4428 && instAddr <= 0x442c) || (instAddr >= 0x3a30 && instAddr <= 0x3a48)*/) {
-        //    console.log(`xxx ${instAddr.toString(16)} r0: ${this.readRegister(0).toString(16)}, r1: ${this.readRegister(1).toString(16)}, r2: ${this.readRegister(2).toString(16)}, r3: ${this.readRegister(3).toString(16)}, r4: ${this.readRegister(4).toString(16)}, r5: ${this.readRegister(5).toString(16)}`);
-        //}
+        // if ((instAddr >= 0x4a40 && instAddr <= 0x4b70) || (instAddr >= 0x6414 && instAddr <= 0x6462)/* || (instAddr >= 0x4428 && instAddr <= 0x442c) || (instAddr >= 0x3a30 && instAddr <= 0x3a48)*/) {
+        //     console.log(`xxx ${instAddr.toString(16)} r0: ${this.readRegister(0).toString(16)}, r1: ${this.readRegister(1).toString(16)}, r2: ${this.readRegister(2).toString(16)}, r3: ${this.readRegister(3).toString(16)}, r4: ${this.readRegister(4).toString(16)}, r5: ${this.readRegister(5).toString(16)}`);
+        // }
         //if (instAddr == 0x3a30) {
         //    console.log(`width: ${this.fetchHalfword(0x2000012c + 12).toString(16)}, height: ${this.fetchHalfword(0x2000012c + 14).toString(16)}`)
         //}
         // this.log(`; 0x${(this.readRegister(this.pcIndex) - 2).toString(16)}: 0x${this.fetchHalfword(this.readRegister(this.pcIndex) - 2).toString(16)}`);
         var instructionHandler = this._decodedInstructions[instAddr];
         if (!instructionHandler) {
-            this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}`);
+            // this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}`);
         }
         this._tmpAddr = instAddr;
         this.incrementPc();
@@ -527,9 +541,7 @@ export class Atsamd21 {
                     case 0b1001: // NEG
                         this._decodedInstructions[instructionIndex] = () => {
                             // this.log(`neg r${rd}, r${rs}`);
-                            var result = -this.readRegister(rs);
-                            this.setRegister(rd, result);
-                            this.setNZ(result);
+                            this.setRegister(rd, this.addAndSetCondition2(0, ~this.readRegister(rs), 1));
                         };
                         break;
                     case 0b1010: // CMP Rd, Rs
@@ -631,13 +643,25 @@ export class Atsamd21 {
                     case 0b1010:
                         this._decodedInstructions[instructionIndex] = () => {
                             // this.log(`mov h${rdHd + 8}, r${rsHs}`);
-                            this.setRegister(rdHd + 8, this.readRegister(rsHs));
+                            if (rdHd + 8 == 15) {
+                                this.setRegister(rdHd + 8, this.readRegister(rsHs) & ~1);
+                                this.incrementPc();
+                            }
+                            else {
+                                this.setRegister(rdHd + 8, this.readRegister(rsHs));
+                            }
                         };
                         break;
                     case 0b1011:
                         this._decodedInstructions[instructionIndex] = () => {
                             // this.log(`mov h${rdHd + 8}, h${rsHs + 8}`);
-                            this.setRegister(rdHd + 8, this.readRegister(rsHs + 8));
+                            if (rdHd + 8 == 15) {
+                                this.setRegister(rdHd + 8, this.readRegister(rsHs + 8) & ~1);
+                                this.incrementPc();
+                            }
+                            else {
+                                this.setRegister(rdHd + 8, this.readRegister(rsHs + 8));
+                            }
                         };
                         break;
                     case 0b1100:

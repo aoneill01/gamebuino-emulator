@@ -17,11 +17,13 @@ export class SercomRegister {
 
         processor.registerPeripheralWriteHandler(baseAddr + DATA_OFFSET, (address, value) => {
             value = value & 0xff;
-            // console.log(`SENDING DATA 0x${value.toString(16)}`);
+            // console.log(`SENDING DATA 0x${value.toString(16)} ${String.fromCharCode(value)}`);
             this._dataListeners.forEach(listener => {
                 listener(value);
             });
         });
+
+        processor.registerPeripheralWriteHandler(baseAddr + 0xC, (address, value) => {});
     }
 
     registerDataListener(listener: (data: number)=>void) {
