@@ -19,7 +19,7 @@ fs.readFile('./sketch_dec09a.ino.arduino_zero.bin', function(err, data) {
     //micro.portA.addOutListener((mask: number, value: number) => {
     //    console.log(`mask: ${mask.toString(2)}; value: ${value.toString(2)}`);
     //});
-    var count = 480000000 / 10000;
+    var count = 480000000 / 1000;
     for (var i = 0; i < count; i++) {
         micro.step();
     }

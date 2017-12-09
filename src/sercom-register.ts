@@ -22,8 +22,6 @@ export class SercomRegister {
                 listener(value);
             });
         });
-
-        processor.registerPeripheralWriteHandler(baseAddr + 0xC, (address, value) => {});
     }
 
     registerDataListener(listener: (data: number)=>void) {
