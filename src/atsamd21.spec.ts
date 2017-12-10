@@ -5,13 +5,13 @@ import 'mocha';
 import * as fs from 'fs';
 
 //fs.readFile('./graphicstest.ino.bin', function(err, data) {  
-fs.readFile('./sketch_dec09a.ino.arduino_zero.bin', function(err, data) {  
+fs.readFile('./PongMeta.ino.gamebuino_meta.bin', function(err, data) {  
     if (err) throw err;
     var memory = new Uint8Array(data.length);
     for (let i = 0; i < data.length; i++) memory[i] = data[i];
 
     var micro = new Atsamd21();
-    micro.loadFlash(memory, 0x2000);
+    micro.loadFlash(memory, 0x4000);
     var screen = new St7735(micro.sercom4, micro.portA, null);
     micro.sercom5.registerDataListener((value: number) => {
         console.log(String.fromCharCode(value));
@@ -19,7 +19,7 @@ fs.readFile('./sketch_dec09a.ino.arduino_zero.bin', function(err, data) {
     //micro.portA.addOutListener((mask: number, value: number) => {
     //    console.log(`mask: ${mask.toString(2)}; value: ${value.toString(2)}`);
     //});
-    var count = 480000000 / 1000;
+    var count = 480000000 / 1;
     for (var i = 0; i < count; i++) {
         micro.step();
     }

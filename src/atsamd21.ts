@@ -103,6 +103,7 @@ export class Atsamd21 {
     }
 
     fetchByte(addr: number): number {
+        if (addr == 0x200008e4) return 1;
         if (addr < 0x20000000) {
             return this._flash[addr];
         }
@@ -330,7 +331,7 @@ export class Atsamd21 {
         // this.log(`; 0x${(this.readRegister(this.pcIndex) - 2).toString(16)}: 0x${this.fetchHalfword(this.readRegister(this.pcIndex) - 2).toString(16)}`);
         var instructionHandler = this._decodedInstructions[instAddr];
         if (!instructionHandler) {
-            // this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}`);
+            this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}`);
         }
         this._tmpAddr = instAddr;
         this.incrementPc();
@@ -348,6 +349,7 @@ export class Atsamd21 {
             var instruction: number;
         
             instruction = this.fetchHalfword(instructionIndex);
+            var followingInstruction = this.fetchHalfword(instructionIndex + 2);
             // // this.log(`inst at ${instructionIndex.toString(16)}: ${instruction.toString(16)}`);
             
             if ((instruction & 0b1110000000000000) == 0b0000000000000000) {
@@ -728,12 +730,24 @@ export class Atsamd21 {
                 let rd: number =     (instruction & 0b0000000000000111);
 
                 switch (hs) {
-                    // TODO strh and ldrh
+                    case 0b00:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            // this.log(`strh r${rd}, [r${rb}, r${ro}]`);
+                            this.writeHalfword(this.readRegister(rb) + this.readRegister(ro), this.readRegister(rd) & 0xffff);
+                        };
+                        break;
                     case 0b01:
                         this._decodedInstructions[instructionIndex] = () => {
                             // this.log(`ldsb r${rd}, [r${rb}, r${ro}]`);
                             var result = this.fetchByte(this.readRegister(rb) + this.readRegister(ro));
                             if (result & 0x80) result = result | (~0xff);
+                            this.setRegister(rd, result);
+                        };
+                        break;
+                    case 0b10:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            // this.log(`ldrh r${rd}, [r${rb}, r${ro}]`);
+                            var result = this.fetchHalfword(this.readRegister(rb) + this.readRegister(ro));
                             this.setRegister(rd, result);
                         };
                         break;
@@ -888,6 +902,30 @@ export class Atsamd21 {
                         };
                         break;
                 }
+            }
+            else if ((instruction & 0b1111111100000000) == 0b1011101000000000) {
+                let opcode: number = (instruction & 0b0000000011000000) >> 6;
+                let rm: number =     (instruction & 0b0000000000111000) >> 3;
+                let rd: number =     (instruction & 0b0000000000000111);
+
+                switch (opcode) {
+                    // TODO rev, revsh
+                    case 0b01:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            var rmVal = this.readRegister(rm);
+                            var result = ((0xff00ff00 & rmVal) >>> 8) | ((0x00ff00ff & rmVal) << 8)
+                            this.setRegister(rd, result);
+                            // this.log(`rev16 r${rd}, r${rm}`);
+                        };
+                        break;
+                }
+            }
+            // CPS
+            else if ((instruction & 0b1111111111101000) == 0b1011011001100000) {
+                this._decodedInstructions[instructionIndex] = () => {
+                    // TODO
+                    this.log("TODO CPS");
+                };
             }
             // Push/pop registers
             else if ((instruction & 0b1111011000000000) == 0b1011010000000000) {
@@ -1141,26 +1179,32 @@ export class Atsamd21 {
                 };
             }
             // Long branch with link
-            else if ((instruction & 0b1111000000000000) == 0b1111000000000000) {
-                let low: boolean = !!(instruction & 0b0000100000000000);
-                let offset: number = instruction & 0b0000011111111111;
-                if (!low) {
-                    // Handle negative
-                    if (offset & 0b0000010000000000) offset |= ~0b0000011111111111;
-                    this._decodedInstructions[instructionIndex] = () => {
-                        // this.log(`long branch with link: high, offset: ${offset}`);
-                        this.setRegister(this.lrIndex, this.readRegister(this.pcIndex) + (offset << 12));
-                    };
-                }
-                else {
-                    this._decodedInstructions[instructionIndex] = () => {
-                        // this.log(`long branch with link: low, offset: ${offset}`);
-                        // todo figure out prefetch
-                        var nextInstruction: number = this.readRegister(this.pcIndex) - 2;
-                        this.setRegister(this.pcIndex, this.readRegister(this.lrIndex) + (offset << 1));
-                        this.setRegister(this.lrIndex, nextInstruction | 1);
-                        this.incrementPc();
-                    };
+            else if ((instruction & 0b1111100000000000) == 0b1111000000000000
+                    && (followingInstruction & 0b1111100000000000) == 0b1111100000000000) {
+                let offset1: number =      instruction & 0b0000011111111111;
+                if (offset1 & 0b0000010000000000) offset1 |= ~0b0000011111111111;
+                let offset2: number =  followingInstruction & 0b0000011111111111;
+
+                this._decodedInstructions[instructionIndex] = () => {
+                    // this.log(`long branch with link: high, offset: ${offset1}`);
+                    this.setRegister(this.lrIndex, this.readRegister(this.pcIndex) + (offset1 << 12));
+                };
+
+                this._decodedInstructions[instructionIndex + 2] = () => {
+                    // this.log(`long branch with link: low, offset: ${offset2}`);
+                    // todo figure out prefetch
+                    var nextInstruction: number = this.readRegister(this.pcIndex) - 2;
+                    this.setRegister(this.pcIndex, this.readRegister(this.lrIndex) + (offset2 << 1));
+                    this.setRegister(this.lrIndex, nextInstruction | 1);
+                    this.incrementPc();
+                };
+            }
+            // MRS
+            else if ((instruction & 0b1111111111100000) == 0b1111001111100000
+                && (followingInstruction & 0b1101000000000000) == 0b1000000000000000) {
+                this._decodedInstructions[instructionIndex] = () => {
+                    // TODO
+                    // this.log("TODO MRS");
                 }
             }
         }

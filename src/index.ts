@@ -7,7 +7,7 @@ var atsamd21 = new Atsamd21();
 import { St7735 } from './st7735';
 
 oReq.onload = function(e) {
-    atsamd21.loadFlash(new Uint8Array(oReq.response), 0x2000);
+    atsamd21.loadFlash(new Uint8Array(oReq.response), 0x4000);
 
     var canvas = <HTMLCanvasElement>document.getElementById('screen');
     var ctx = canvas.getContext("2d");
