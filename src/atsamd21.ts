@@ -258,7 +258,7 @@ export class Atsamd21 {
     }
 
     private setNZ(result: number) {
-        this.condN = result < 0;
+        this.condN = (result & 0x80000000) != 0;
         this.condZ = result == 0;
     }
 
@@ -321,8 +321,8 @@ export class Atsamd21 {
             instAddr = this.readRegister(this.pcIndex) - 2;
         }
 
-        // if ((instAddr >= 0x4a40 && instAddr <= 0x4b70) || (instAddr >= 0x6414 && instAddr <= 0x6462)/* || (instAddr >= 0x4428 && instAddr <= 0x442c) || (instAddr >= 0x3a30 && instAddr <= 0x3a48)*/) {
-        //     console.log(`xxx ${instAddr.toString(16)} r0: ${this.readRegister(0).toString(16)}, r1: ${this.readRegister(1).toString(16)}, r2: ${this.readRegister(2).toString(16)}, r3: ${this.readRegister(3).toString(16)}, r4: ${this.readRegister(4).toString(16)}, r5: ${this.readRegister(5).toString(16)}`);
+        // if ((instAddr >= 0x62b4 && instAddr <= 0x6590) || (instAddr >= 0x8188 && instAddr <= 0x81b8)) {
+             // console.log(`xxx ${instAddr.toString(16)} r0: ${this.readRegister(0).toString(16)}, r1: ${this.readRegister(1).toString(16)}, r2: ${this.readRegister(2).toString(16)}, r3: ${this.readRegister(3).toString(16)}, r4: ${this.readRegister(4).toString(16)}, r5: ${this.readRegister(5).toString(16)}, r6: ${this.readRegister(6).toString(16)}, r7: ${this.readRegister(7).toString(16)}`);
         // }
         //if (instAddr == 0x3a30) {
         //    console.log(`width: ${this.fetchHalfword(0x2000012c + 12).toString(16)}, height: ${this.fetchHalfword(0x2000012c + 14).toString(16)}`)
@@ -380,7 +380,7 @@ export class Atsamd21 {
                         case 2: // ASR
                             this._decodedInstructions[instructionIndex] = () => {
                                 var result = this.readRegister(rs) >> offset;
-                                // this.log(`lsr r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
+                                // this.log(`asr r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
                                 this.setRegister(rd, result);
                                 this.condC = (this.readRegister(rs) & (1 << (32 - offset))) != 0;
                                 this.setNZ(result);
@@ -835,7 +835,8 @@ export class Atsamd21 {
                 else {
                     this._decodedInstructions[instructionIndex] = () => {
                         // this.log(`add r${rd}, PC, #${constant}`);
-                        this.setRegister(rd, this.readRegister(this.pcIndex) + constant);
+                        // bit 1 is forced to zero (word aligned)
+                        this.setRegister(rd, (this.readRegister(this.pcIndex) & ~0b11) + constant);
                     };
                 }
             }
