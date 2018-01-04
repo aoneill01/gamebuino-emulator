@@ -5,7 +5,7 @@ import 'mocha';
 import * as fs from 'fs';
 
 //fs.readFile('./graphicstest.ino.bin', function(err, data) {  
-fs.readFile('./PongMeta.ino.gamebuino_meta.bin', function(err, data) {  
+fs.readFile('./Solitaire.bin', function(err, data) {  
     if (err) throw err;
     var memory = new Uint8Array(data.length);
     for (let i = 0; i < data.length; i++) memory[i] = data[i];

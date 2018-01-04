@@ -1,5 +1,6 @@
 import { PortRegister } from "./port-register";
 import { SercomRegister } from "./sercom-register";
+import { ScsRegisters } from "./scs-registers";
 
 const PORTA_OFFSET: number = 0x41004400;
 const PORTB_OFFSET: number = 0x41004480;
@@ -27,6 +28,7 @@ export class Atsamd21 {
     portB: PortRegister;
     sercom4: SercomRegister;
     sercom5: SercomRegister;
+    scs: ScsRegisters;
     
     cycleCount: number = 0;
 
@@ -49,6 +51,8 @@ export class Atsamd21 {
         this.portB = new PortRegister(PORTB_OFFSET, this);
         this.sercom4 = new SercomRegister(4, this);
         this.sercom5 = new SercomRegister(5, this);
+
+        this.scs = new ScsRegisters(this);
     }
 
     loadFlash(contents: Uint8Array, offset: number = 0) {
@@ -103,7 +107,6 @@ export class Atsamd21 {
     }
 
     fetchByte(addr: number): number {
-        if (addr == 0x200008e4) return 1;
         if (addr < 0x20000000) {
             return this._flash[addr];
         }
