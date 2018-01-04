@@ -6,9 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "mocha -r ts-node/register src/**/*.spec.ts",
-    "tsc": "tsc",
     "build": "node ./node_modules/webpack/bin/webpack",
-    "debug": "npm run tsc && node dist/atsamd21.js"
+    "start": "webpack-dev-server --config webpack.config.js"
   },
   "author": "Andy O'Neill <aoneill01@gmail.com>",
   "repository": {
@@ -26,6 +25,7 @@
     "ts-node": "^3.3.0",
     "typescript": "^2.6.1",
     "webpack": "^3.8.1",
+    "webpack-dev-server": "^2.7.1",
     "webpack-uglify-js-plugin": "^1.1.9"
   }
 }
