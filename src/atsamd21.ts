@@ -1,6 +1,7 @@
 import { PortRegister } from "./port-register";
 import { SercomRegister } from "./sercom-register";
 import { ScsRegisters } from "./scs-registers";
+import { DmacRegisters } from "./dmac-registers";
 
 const PORTA_OFFSET: number = 0x41004400;
 const PORTB_OFFSET: number = 0x41004480;
@@ -29,6 +30,7 @@ export class Atsamd21 {
     sercom4: SercomRegister;
     sercom5: SercomRegister;
     scs: ScsRegisters;
+    dmac: DmacRegisters;
     
     cycleCount: number = 0;
 
@@ -53,6 +55,8 @@ export class Atsamd21 {
         this.sercom5 = new SercomRegister(5, this);
 
         this.scs = new ScsRegisters(this);
+
+        this.dmac = new DmacRegisters(this);
     }
 
     loadFlash(contents: Uint8Array, offset: number = 0) {
@@ -161,6 +165,10 @@ export class Atsamd21 {
             }
             else {
                 // this.log(`NO HANDLER for 0x${addr.toString(16)} ${"" + value}`);
+
+                if (addr >= 0x41004800 && addr <= 0x41004800 + 0x4F) {
+                    this.log(`DMAC WORD 0x${addr.toString(16)} 0x${value.toString(16)}`);
+                }
             }
         }
     }
@@ -189,6 +197,10 @@ export class Atsamd21 {
             }
             else {
                 // this.log(`NO HANDLER for 0x${addr.toString(16)} ${"" + value}`);
+
+                if (addr >= 0x41004800 && addr <= 0x41004800 + 0x4F) {
+                    this.log(`DMAC HWORD 0x${addr.toString(16)} 0x${value.toString(16)}`);
+                }
             }
         }
     }
@@ -210,6 +222,10 @@ export class Atsamd21 {
             }
             else {
                 // this.log(`NO HANDLER for 0x${addr.toString(16)} ${"" + value}`);
+
+                if (addr >= 0x41004800 && addr <= 0x41004800 + 0x4F) {
+                    this.log(`DMAC BYTE 0x${addr.toString(16)} 0x${value.toString(16)}`);
+                }
             }
         }
     }

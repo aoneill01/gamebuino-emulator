@@ -11,11 +11,11 @@ oReq.onload = function(e) {
 
     var canvas = <HTMLCanvasElement>document.getElementById('screen');
     var ctx = canvas.getContext("2d");
-    var screen = new St7735(atsamd21.sercom4, atsamd21.portA, ctx);
+    var screen = new St7735(atsamd21.sercom4, atsamd21.portB, ctx);
 
     run();
 }
-oReq.open("GET", "graphicstest.ino.bin");
+oReq.open("GET", "Solitaire.bin");
 oReq.responseType = "arraybuffer";
 oReq.send();
 
