@@ -14,6 +14,8 @@ export class Atsamd21 {
     private _sysTickTrigger: number = 0;
     private _sysTickVector: number;
     tickCount: number = 0;
+    private _dmacVector: number;
+    private _dmacInterrupt: boolean;
 
     registers: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 
@@ -165,10 +167,6 @@ export class Atsamd21 {
             }
             else {
                 // this.log(`NO HANDLER for 0x${addr.toString(16)} ${"" + value}`);
-
-                if (addr >= 0x41004800 && addr <= 0x41004800 + 0x4F) {
-                    this.log(`DMAC WORD 0x${addr.toString(16)} 0x${value.toString(16)}`);
-                }
             }
         }
     }
@@ -197,10 +195,6 @@ export class Atsamd21 {
             }
             else {
                 // this.log(`NO HANDLER for 0x${addr.toString(16)} ${"" + value}`);
-
-                if (addr >= 0x41004800 && addr <= 0x41004800 + 0x4F) {
-                    this.log(`DMAC HWORD 0x${addr.toString(16)} 0x${value.toString(16)}`);
-                }
             }
         }
     }
@@ -222,10 +216,6 @@ export class Atsamd21 {
             }
             else {
                 // this.log(`NO HANDLER for 0x${addr.toString(16)} ${"" + value}`);
-
-                if (addr >= 0x41004800 && addr <= 0x41004800 + 0x4F) {
-                    this.log(`DMAC BYTE 0x${addr.toString(16)} 0x${value.toString(16)}`);
-                }
             }
         }
     }
@@ -298,11 +288,28 @@ export class Atsamd21 {
         // this.incrementPc();
         this._sysTickVector = this.fetchWord(0x003C + offset) & ~1;
         // console.log(`sysTickVector: 0x${this._sysTickVector.toString(16)}`);
+        this._dmacVector = this.fetchWord(0x0058 + offset) & ~1;
     }
 
     private _tmpAddr: number;
 
     step() {
+        if (this._dmacInterrupt) {
+            // this.log("DMAC interrupt");
+            this._dmacInterrupt = false;
+            // TODO better implementation for CPSR 
+            this.pushStack((this.condC ? 1 : 0) | (this.condN ? 2 : 0) | (this.condV ? 4 : 0) | (this.condZ ? 8 : 0));
+            this.pushStack(this.readRegister(this.pcIndex));
+            this.pushStack(this.readRegister(this.lrIndex));
+            this.pushStack(this.readRegister(12));
+            this.pushStack(this.readRegister(3));
+            this.pushStack(this.readRegister(2));
+            this.pushStack(this.readRegister(1));
+            this.pushStack(this.readRegister(0));
+            this.setRegister(this.pcIndex, this._dmacVector);
+            this.setRegister(this.lrIndex, 0xfffffff9);
+            this.incrementPc();
+        }
         if (this._sysTickTrigger >= 48000) {
             this._sysTickTrigger = 0;
             // this.log('sysTickHandler');
@@ -355,6 +362,10 @@ export class Atsamd21 {
         this._tmpAddr = instAddr;
         this.incrementPc();
         instructionHandler();
+    }
+
+    dmacInterrupt() {
+        this._dmacInterrupt = true;
     }
 
     speedTestNop(i: number) {
@@ -944,7 +955,7 @@ export class Atsamd21 {
             else if ((instruction & 0b1111111111101000) == 0b1011011001100000) {
                 this._decodedInstructions[instructionIndex] = () => {
                     // TODO
-                    this.log("TODO CPS");
+                    // this.log("TODO CPS");
                 };
             }
             // Push/pop registers

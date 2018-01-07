@@ -30,9 +30,9 @@ export class St7735 {
     byteReceived(value: number) {
         // console.log(this._port.getOut().toString(2));
         // Test if command or data
+        // TODO configuration of port for data/command select.
         if (this._port.getOut() & 0b100000000000000000000000) {
-            
-            console.log(`Data    ${value.toString(16)}`);
+            // console.log(`Data    ${value.toString(16)}`);
             switch (this._lastCommand) {
                 case RAMWR:
                     if (this._argIndex % 2 == 0) {
@@ -44,7 +44,7 @@ export class St7735 {
                         var g = ((0b0000011111100000 & pixelData) >>> 3);
                         var b = ((0b0000000000011111 & pixelData) << 3);
 
-                        console.log(`set pixel (${this._x}, ${this._y})`);
+                        // console.log(`set pixel (${this._x}, ${this._y})`);
                         if (this._ctx) {
                             this._ctx.fillStyle = "rgba("+r+","+g+","+b+",255)";
                             this._ctx.fillRect(this._x, this._y, 1, 1);
@@ -84,7 +84,7 @@ export class St7735 {
             
         }
         else {
-            console.log(`Command ${value.toString(16)}`);
+            // console.log(`Command ${value.toString(16)}`);
             this._lastCommand = value;
             this._argIndex = 0;
         }

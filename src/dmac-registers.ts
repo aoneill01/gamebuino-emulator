@@ -9,6 +9,7 @@ const CHID_OFFSET: number = 0x3F;
 const CHCTRLA_OFFSET: number = 0x40;
 const CHCTRLB_OFFSET: number = 0x44;
 const CHINTENSET_OFFSET: number = 0x4D;
+const CHINTFLAG_OFFSET: number = 0x4E;
 
 export class DmacRegisters {
     private _baseAddr: number;
@@ -45,16 +46,23 @@ export class DmacRegisters {
                 var dstaddr = processor.fetchWord(channelConfigAddress + 0x08);
                 var descaddr = processor.fetchWord(channelConfigAddress + 0x0C);
 
-                console.log(`btctrl: 0x${btctrl.toString(16)}; btcnt: #${btcnt}; srcaddr: 0x${srcaddr.toString(16)}; dstaddr: 0x${dstaddr.toString(16)}; descaddr: 0x${descaddr.toString(16)};`)
+                // console.log(`btctrl: 0x${btctrl.toString(16)}; btcnt: #${btcnt}; srcaddr: 0x${srcaddr.toString(16)}; dstaddr: 0x${dstaddr.toString(16)}; descaddr: 0x${descaddr.toString(16)};`)
 
                 for (var i = 0; i < btcnt; i++) {
                     processor.writeByte(dstaddr, processor.fetchByte(srcaddr + i));
                 }
+
+                processor.dmacInterrupt();
             }
+        });
+
+        processor.registerPeripheralReadHandler(DMAC_ADDR + CHINTFLAG_OFFSET, (address: number) => {
+            // TODO Actual implementation of SUSP, TCMPL, and TERR
+            return 0b010; // TCMPL 
         });
     }
 
     debugWrite(name: string, address: number, value: number) {
-        console.log(`${name} <= 0x${value.toString(16)}`);
+        // console.log(`${name} <= 0x${value.toString(16)}`);
     }
 }
