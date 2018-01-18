@@ -12,7 +12,7 @@ fs.readFile('./Solitaire.bin', function(err, data) {
 
     var micro = new Atsamd21();
     micro.loadFlash(memory, 0x4000);
-    var screen = new St7735(micro.sercom4, micro.portB, null);
+    var screen = new St7735(micro.sercom4, micro.portA, micro.portB, null);
     micro.sercom5.registerDataListener((value: number) => {
         console.log(String.fromCharCode(value));
     })

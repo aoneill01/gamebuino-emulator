@@ -6,7 +6,8 @@ const RASET: number = 0x2b; // Row address set command
 const RAMWR: number = 0x2c; // Memory write command
 
 export class St7735 {
-    private _port: PortRegister;
+    private _portA: PortRegister;
+    private _portB: PortRegister;
     private _xStart: number;
     private _xEnd: number;
     private _yStart: number;
@@ -20,18 +21,21 @@ export class St7735 {
     private _lastCommand: number;
     private _tmpData: number;
 
-    constructor(sercom: SercomRegister, port: PortRegister, ctx?: CanvasRenderingContext2D) {
-        this._port = port;
+    constructor(sercom: SercomRegister, portA: PortRegister, portB: PortRegister, ctx?: CanvasRenderingContext2D) {
+        this._portA = portA;
+        this._portB = portB;
         this._ctx = ctx;
 
         sercom.registerDataListener(this.byteReceived.bind(this));
     }
 
     byteReceived(value: number) {
+        // if ((this._portA.getOut() & (1 << 17)) == 0) return;
+        if ((this._portB.getOut() & (1 << 22)) != 0) return;
         // console.log(this._port.getOut().toString(2));
         // Test if command or data
         // TODO configuration of port for data/command select.
-        if (this._port.getOut() & 0b100000000000000000000000) {
+        if (this._portB.getOut() & 0b100000000000000000000000) {
             // console.log(`Data    ${value.toString(16)}`);
             switch (this._lastCommand) {
                 case RAMWR:

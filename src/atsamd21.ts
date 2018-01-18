@@ -126,6 +126,10 @@ export class Atsamd21 {
                 // Hack for GCLK CTRL
                 return 0; // There is no reset operation ongoing
             }
+            if (addr == 0x42004018) {
+                // Hack for ADC INTFLAG RESRDY
+                return 1;
+            }
 
             var handler = this._peripheralReadHandlers[addr];
             if (handler) {
@@ -310,7 +314,7 @@ export class Atsamd21 {
             this.setRegister(this.lrIndex, 0xfffffff9);
             this.incrementPc();
         }
-        if (this._sysTickTrigger >= 48000) {
+        else if (this._sysTickTrigger >= 48000) {
             this._sysTickTrigger = 0;
             // this.log('sysTickHandler');
             // TODO better implementation for CPSR 
@@ -329,7 +333,7 @@ export class Atsamd21 {
 
         var instAddr = this.readRegister(this.pcIndex) - 2;
 
-        if (instAddr == (0xfffffff8 | 0)) {
+        while ((instAddr | 0) == (0xfffffff8 | 0)) {
             // this.log(`sysTickHandler done ${this.fetchWord(0x20000288)}`);
             this.popStack(0);
             this.popStack(1);
@@ -357,7 +361,7 @@ export class Atsamd21 {
         // this.log(`; 0x${(this.readRegister(this.pcIndex) - 2).toString(16)}: 0x${this.fetchHalfword(this.readRegister(this.pcIndex) - 2).toString(16)}`);
         var instructionHandler = this._decodedInstructions[instAddr];
         if (!instructionHandler) {
-            this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}`);
+            this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}; prev addr: 0x${this._tmpAddr.toString(16)}`);
         }
         this._tmpAddr = instAddr;
         this.incrementPc();
