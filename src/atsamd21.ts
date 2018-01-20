@@ -36,6 +36,10 @@ export class Atsamd21 {
     
     cycleCount: number = 0;
 
+    // breakpoint
+    breakAfter: number = -1;
+    paused: boolean = false;;
+
     // Stack pointer
     readonly spIndex = 13;
     // Link register
@@ -298,6 +302,12 @@ export class Atsamd21 {
     private _tmpAddr: number;
 
     step() {
+        /*
+        if (this.breakAfter == this._tmpAddr) {
+            this.paused = true;
+        }
+        if (this.paused) return;
+        */
         if (this._dmacInterrupt) {
             // this.log("DMAC interrupt");
             this._dmacInterrupt = false;

@@ -3,7 +3,8 @@ import { Atsamd21 } from './atsamd21';
 var flash = new Uint8Array(10016);
 
 var oReq = new XMLHttpRequest();
-var atsamd21 = new Atsamd21();
+window["atsamd21"] = new Atsamd21();
+var atsamd21 = window["atsamd21"];
 import { St7735 } from './st7735';
 import { Buttons } from './buttons';
 
@@ -17,7 +18,7 @@ oReq.onload = function(e) {
 
     run();
 }
-oReq.open("GET", "Solitaire.bin");
+oReq.open("GET", "Game.bin");
 oReq.responseType = "arraybuffer";
 oReq.send();
 

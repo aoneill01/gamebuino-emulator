@@ -19,24 +19,38 @@ export class Buttons {
 
         document.addEventListener('keydown', (event) => {
             switch (event.keyCode) {
-                case 83: this._buttonData &= (~(1 << 0)); break;
-                case 65: this._buttonData &= (~(1 << 1)); break;
-                case 68: this._buttonData &= (~(1 << 2)); break;
-                case 87: this._buttonData &= (~(1 << 3)); break;
-                case 74: this._buttonData &= (~(1 << 4)); break;
-                case 75: this._buttonData &= (~(1 << 5)); break;
-                case 76: this._buttonData &= (~(1 << 6)); break;
+                // down
+                case 68: this._buttonData &= (~(1 << 0)); break;
+                // left
+                case 83: this._buttonData &= (~(1 << 1)); break;
+                // right
+                case 70: this._buttonData &= (~(1 << 2)); break;
+                // up
+                case 69: this._buttonData &= (~(1 << 3)); break;
+                // A
+                case 75: this._buttonData &= (~(1 << 4)); break;
+                // B
+                case 76: this._buttonData &= (~(1 << 5)); break;
+                // Menu
+                case 82: this._buttonData &= (~(1 << 6)); break;
             }
         });
         document.addEventListener('keyup', (event) => {
             switch (event.keyCode) {
-                case 83: this._buttonData |= (1 << 0); break;
-                case 65: this._buttonData |= (1 << 1); break;
-                case 68: this._buttonData |= (1 << 2); break;
-                case 87: this._buttonData |= (1 << 3); break;
-                case 74: this._buttonData |= (1 << 4); break;
-                case 75: this._buttonData |= (1 << 5); break;
-                case 76: this._buttonData |= (1 << 6); break;
+                // down
+                case 68: this._buttonData |= (1 << 0); break;
+                // left
+                case 83: this._buttonData |= (1 << 1); break;
+                // right
+                case 70: this._buttonData |= (1 << 2); break;
+                // up
+                case 69: this._buttonData |= (1 << 3); break;
+                // A
+                case 75: this._buttonData |= (1 << 4); break;
+                // B
+                case 76: this._buttonData |= (1 << 5); break;
+                // Menu
+                case 82: this._buttonData |= (1 << 6); break;
             }
         });
     }

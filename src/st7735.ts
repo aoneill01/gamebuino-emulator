@@ -78,6 +78,7 @@ export class St7735 {
                     }
                     else if (this._argIndex == 3) {
                         this._yEnd = value;
+                        // console.log(`(${this._xStart}, ${this._yStart}) - (${this._xEnd}, ${this._yEnd})`);
                     }
                     break;
                 default:

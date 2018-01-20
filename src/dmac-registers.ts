@@ -47,9 +47,9 @@ export class DmacRegisters {
                 var descaddr = processor.fetchWord(channelConfigAddress + 0x0C);
 
                 // console.log(`btctrl: 0x${btctrl.toString(16)}; btcnt: #${btcnt}; srcaddr: 0x${srcaddr.toString(16)}; dstaddr: 0x${dstaddr.toString(16)}; descaddr: 0x${descaddr.toString(16)};`)
-
+                
                 for (var i = 0; i < btcnt; i++) {
-                    processor.writeByte(dstaddr, processor.fetchByte(srcaddr + i));
+                    processor.writeByte(dstaddr, processor.fetchByte(srcaddr + i - btcnt));
                 }
 
                 processor.dmacInterrupt();
