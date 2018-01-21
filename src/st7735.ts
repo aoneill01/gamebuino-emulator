@@ -51,7 +51,7 @@ export class St7735 {
                         // console.log(`set pixel (${this._x}, ${this._y})`);
                         if (this._ctx) {
                             this._ctx.fillStyle = "rgba("+r+","+g+","+b+",255)";
-                            this._ctx.fillRect(this._x, this._y, 1, 1);
+                            this._ctx.fillRect(this._x * 2, this._y * 2, 2, 2);
                         }
 
                         this._x++;

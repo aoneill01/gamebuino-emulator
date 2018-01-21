@@ -17,13 +17,48 @@
             border: 1px solid darkred;
             box-shadow: 0 0 8px red;
         }
+
+        .game-link {
+            padding-right: .5em;
+            display: inline-block;
+        }
+
+        #rate {
+            display: none;
+        }
+
+        #screen {
+            display: block;
+            border: 1px solid #333;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            width: 500px;
+            margin: 0 auto;
+        }
+        
+        h2 {
+            font-size: large;
+            margin-bottom: .25em;
+        }
     </style>
 </head>
 
 <body>
-    <canvas id="screen" height="128" width="160"></canvas>
+    <canvas id="screen" height="256" width="320"></canvas>
     <div id="rate"></div>
-    <script src="bundle.js"></script>
+    <div class="main-content">
+        <h2>Examples</h2>
+        <div id="example-games"></div>
+
+        <h2>Controls</h2>
+        <div>←: S, ↑: E, →: F, ↓: D, Ⓐ: K, Ⓑ: L, Menu: R</div>
+        
+        <h2>Upload .BIN</h2>
+        <div><input type="file" id="file-upload" /></div>
+        <script src="bundle.js"></script>
+    </div>
 </body>
 
 </html>

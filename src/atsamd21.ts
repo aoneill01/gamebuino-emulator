@@ -289,7 +289,7 @@ export class Atsamd21 {
     reset(offset: number) {
         this.setRegister(this.spIndex, this.fetchWord(0x0000 + offset));
         this.setRegister(this.lrIndex, 0xffffffff);
-        this.setRegister(this.pcIndex, this.fetchHalfword(0x0004 + offset) & ~1); // set bit 0 to 0. 
+        this.setRegister(this.pcIndex, this.fetchWord(0x0004 + offset) & ~1); // set bit 0 to 0. 
         // this.log(`init pc: ${this.readRegister(this.pcIndex).toString(16)}`);
         // pc one instruction ahead due to pipeline.
         this.incrementPc();
@@ -371,7 +371,7 @@ export class Atsamd21 {
         // this.log(`; 0x${(this.readRegister(this.pcIndex) - 2).toString(16)}: 0x${this.fetchHalfword(this.readRegister(this.pcIndex) - 2).toString(16)}`);
         var instructionHandler = this._decodedInstructions[instAddr];
         if (!instructionHandler) {
-            this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}; prev addr: 0x${this._tmpAddr.toString(16)}`);
+            this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}; prev addr: 0x${this._tmpAddr ? this._tmpAddr.toString(16) : "?"}`);
         }
         this._tmpAddr = instAddr;
         this.incrementPc();
