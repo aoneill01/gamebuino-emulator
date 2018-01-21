@@ -42,6 +42,10 @@
             font-size: large;
             margin-bottom: .25em;
         }
+
+        #error {
+            color: red;
+        }
     </style>
 </head>
 
@@ -49,6 +53,8 @@
     <canvas id="screen" height="256" width="320"></canvas>
     <div id="rate"></div>
     <div class="main-content">
+        <p>Be patient. This runs much slower than the hardware. The "SD INIT... FAILED" message is normal because SD hasn't been implemented. Click on the link below to load an example game.</p>
+
         <h2>Examples</h2>
         <div id="example-games"></div>
 
@@ -56,9 +62,12 @@
         <div>←: S, ↑: E, →: F, ↓: D, Ⓐ: K, Ⓑ: L, Menu: R</div>
         
         <h2>Upload .BIN</h2>
+        <p>Upload your own compiled game here.</p>
         <div><input type="file" id="file-upload" /></div>
-        <script src="bundle.js"></script>
+        <div id="error"></div>
     </div>
+
+    <script src="bundle.js"></script>
 </body>
 
 </html>

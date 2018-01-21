@@ -8,6 +8,7 @@ var atsamd21 = window["atsamd21"];
 var running = false;
 
 var exampleGames = [
+    /*
     {
         name: "Defend Pluto",
         url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/DefendPluto/DefendPluto.bin"
@@ -27,11 +28,11 @@ var exampleGames = [
     {
         name: "Reuben",
         url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/reuben3/reuben3.bin"
-    },
+    },*/
     {
         name: "Solitaire",
         url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/Solitaire/Solitaire.bin"
-    },
+    }/*,
     {
         name: "Super Crate META",
         url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/SuperCrateMETA/SuperCrateMETA.bin"
@@ -39,7 +40,7 @@ var exampleGames = [
     {
         name: "Yatzy",
         url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/YATZY/YATZY.bin"
-    }
+    }*/
 ];
 
 listGames();
@@ -58,15 +59,23 @@ oReq.onload = function(e) {
 var total:number = 0;
 
 function run() {
-    const loopCount = 480000;
-    var priorTick = atsamd21.tickCount;
-    var count = loopCount;
-    for (var i = 0; i < count; i++) {
-        atsamd21.step();
-    }
-    total += atsamd21.tickCount - priorTick;
+    try {
+        const loopCount = 480000;
+        var priorTick = atsamd21.tickCount;
+        var count = loopCount;
+        for (var i = 0; i < count; i++) {
+            atsamd21.step();
+        }
+        total += atsamd21.tickCount - priorTick;
 
-    setTimeout(run, 0);
+        setTimeout(run, 0);
+    }
+    catch (error) {
+        running = false;
+        document.getElementById("error").innerHTML = "ERROR. See console for details."
+        throw error;
+    }
+
 }
 
 setInterval(function() {
@@ -103,6 +112,8 @@ function listenToFileUpload() {
 }
 
 function load(buffer: ArrayBuffer) {
+    document.getElementById("error").innerHTML = "";
+    
     window["atsamd21"] = new Atsamd21();
     atsamd21 = window["atsamd21"];
     atsamd21.loadFlash(new Uint8Array(buffer), 0x4000);
