@@ -44,6 +44,7 @@ var exampleGames = [
 ];
 
 listGames();
+resetButton();
 listenToFileUpload();
 
 function loadGame(url:string): void {
@@ -85,15 +86,18 @@ setInterval(function() {
 }, 1000);
 
 function listGames() {
-    var div = document.getElementById('example-games');
-    for (const game of exampleGames) {
-        var anchor = document.createElement("a");
-        anchor.setAttribute("href", "#");
-        anchor.setAttribute("class", "game-link");
-        anchor.onclick = function() { loadGame (game.url); };
-        anchor.appendChild(document.createTextNode(game.name));
-        div.appendChild(anchor);
-    }
+    var example = document.getElementById('example');
+    example.setAttribute("class", "game-link");
+    example.onclick = function() { loadGame (exampleGames[0].url); return false; };
+    example.appendChild(document.createTextNode('Try an example game!'));
+}
+
+function resetButton() {
+    var elem = document.getElementById('reset-container');
+    var btn = document.createElement("button");
+    btn.onclick = function() { atsamd21.reset(0x4000); };
+    btn.innerHTML = 'Reset';
+    elem.appendChild(btn);
 }
 
 function listenToFileUpload() {
