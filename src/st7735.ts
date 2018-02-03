@@ -5,6 +5,10 @@ const CASET: number = 0x2a; // Column address set command
 const RASET: number = 0x2b; // Row address set command
 const RAMWR: number = 0x2c; // Memory write command
 
+const WIDTH: number = 160; // Screen width in pixels
+const HEIGHT: number = 128; // Screen height in pixels
+const SCALE: number = 2; // Scaling for drawing to canvas
+
 export class St7735 {
     private _portA: PortRegister;
     private _portB: PortRegister;
@@ -21,12 +25,24 @@ export class St7735 {
     private _lastCommand: number;
     private _tmpData: number;
 
+    private _imageData: ImageData;
+    private _buf8: Uint8ClampedArray;
+    private _data: Uint32Array;
+
     constructor(sercom: SercomRegister, portA: PortRegister, portB: PortRegister, ctx?: CanvasRenderingContext2D) {
         this._portA = portA;
         this._portB = portB;
         this._ctx = ctx;
 
         sercom.registerDataListener(this.byteReceived.bind(this));
+
+        if (ctx) {
+            this._imageData = ctx.getImageData(0, 0, WIDTH * SCALE, HEIGHT * SCALE);
+
+            var buf = new ArrayBuffer(this._imageData.data.length);
+            this._buf8 = new Uint8ClampedArray(buf);
+            this._data = new Uint32Array(buf);
+        }
     }
 
     byteReceived(value: number) {
@@ -43,15 +59,22 @@ export class St7735 {
                         this._tmpData = value;
                     }
                     else {
-                        var pixelData = ((this._tmpData << 8) | value);
-                        var r = ((0b1111100000000000 & pixelData) >>> 8);
-                        var g = ((0b0000011111100000 & pixelData) >>> 3);
-                        var b = ((0b0000000000011111 & pixelData) << 3);
-
                         // console.log(`set pixel (${this._x}, ${this._y})`);
                         if (this._ctx) {
-                            this._ctx.fillStyle = "rgba("+r+","+g+","+b+",255)";
-                            this._ctx.fillRect(this._x * 2, this._y * 2, 2, 2);
+                            var pixelData = ((this._tmpData << 8) | value);
+                            var r = ((0b1111100000000000 & pixelData) >>> 8);
+                            var g = ((0b0000011111100000 & pixelData) >>> 3);
+                            var b = ((0b0000000000011111 & pixelData) << 3);
+                            var color = (255 << 24) |    // alpha
+                                        (b << 16) |    // blue
+                                        (g <<  8) |    // green
+                                        r;            // red
+                            var baseIndex = SCALE * (this._y * WIDTH * SCALE + this._x);
+
+                            this._data[baseIndex] = color;
+                            this._data[baseIndex + 1] = color;
+                            this._data[baseIndex + WIDTH * SCALE] = color;
+                            this._data[baseIndex + 1 + WIDTH * SCALE] = color;
                         }
 
                         this._x++;
@@ -92,6 +115,13 @@ export class St7735 {
             // console.log(`Command ${value.toString(16)}`);
             this._lastCommand = value;
             this._argIndex = 0;
+        }
+    }
+
+    updateCanvas() {
+        if (this._ctx) {
+            this._imageData.data.set(this._buf8);
+            this._ctx.putImageData(this._imageData, 0, 0);
         }
     }
 }

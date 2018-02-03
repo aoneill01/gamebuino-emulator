@@ -4,6 +4,7 @@ import { Buttons } from './buttons';
 
 var oReq = new XMLHttpRequest();
 window["atsamd21"] = new Atsamd21();
+var screen;
 var atsamd21 = window["atsamd21"];
 var running = false;
 
@@ -69,6 +70,8 @@ function run() {
         }
         total += atsamd21.tickCount - priorTick;
 
+        screen.updateCanvas();
+
         setTimeout(run, 0);
     }
     catch (error) {
@@ -124,7 +127,7 @@ function load(buffer: ArrayBuffer) {
 
     var canvas = <HTMLCanvasElement>document.getElementById('screen');
     var ctx = canvas.getContext("2d");
-    var screen = new St7735(atsamd21.sercom4, atsamd21.portA, atsamd21.portB, ctx);
+    screen = new St7735(atsamd21.sercom4, atsamd21.portA, atsamd21.portB, ctx);
     var buttons = new Buttons(atsamd21.sercom4, atsamd21.portA, atsamd21.portB);
 
     if (!running) {
