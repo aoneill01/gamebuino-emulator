@@ -9,39 +9,10 @@ var atsamd21 = window["atsamd21"];
 var running = false;
 
 var exampleGames = [
-    /*
-    {
-        name: "Defend Pluto",
-        url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/DefendPluto/DefendPluto.bin"
-    },
-    {
-        name: "META Hexagon",
-        url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/MetaHexagon/MetaHexagon.bin"
-    },
-    {
-        name: "Omega Horizon",
-        url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/OMEGA_HORIZON/OMEGA_HORIZON.bin"
-    },
-    {
-        name: "Picomon",
-        url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/picomon/picomon.bin"
-    },
-    {
-        name: "Reuben",
-        url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/reuben3/reuben3.bin"
-    },*/
     {
         name: "Solitaire",
         url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/Solitaire/Solitaire.bin"
-    }/*,
-    {
-        name: "Super Crate META",
-        url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/SuperCrateMETA/SuperCrateMETA.bin"
-    },
-    {
-        name: "Yatzy",
-        url: "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/YATZY/YATZY.bin"
-    }*/
+    }
 ];
 
 listGames();
@@ -83,10 +54,9 @@ function run() {
 }
 
 setInterval(function() {
-    document.getElementById('rate').innerHTML = Math.round((total / 1000000)) + " MHz";
-    total = 0;
-    // console.log((atsamd21.readRegister(atsamd21.pcIndex)-2).toString(16));
-}, 1000);
+        document.getElementById('rate').innerHTML = Math.round((total / 1000000)) + " MHz";
+        total = 0;
+    }, 1000);
 
 function listGames() {
     var example = document.getElementById('example');

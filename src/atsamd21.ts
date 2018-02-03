@@ -324,7 +324,9 @@ export class Atsamd21 {
             this.setRegister(this.lrIndex, 0xfffffff9);
             this.incrementPc();
         }
-        else if (this._sysTickTrigger >= 48000) {
+        // HACK: Only waiting half the required time since we
+        // gain so much performance with the unrealistic DMAC
+        else if (this._sysTickTrigger >= 48000 / 2) {
             this._sysTickTrigger = 0;
             // this.log('sysTickHandler');
             // TODO better implementation for CPSR 
