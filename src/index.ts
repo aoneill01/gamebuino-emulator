@@ -4,7 +4,9 @@ import { Buttons } from './buttons';
 
 var oReq = new XMLHttpRequest();
 window["atsamd21"] = new Atsamd21();
-var screen;
+var screen: St7735;
+var buttons: Buttons;
+var keymap: number[];
 var atsamd21 = window["atsamd21"];
 var running = false;
 
@@ -18,6 +20,7 @@ var exampleGames = [
 listGames();
 resetButton();
 listenToFileUpload();
+customKeyMapping();
 
 function loadGame(url:string): void {
     oReq.open("GET", url);
@@ -60,7 +63,6 @@ setInterval(function() {
 
 function listGames() {
     var example = document.getElementById('example');
-    example.setAttribute("class", "game-link");
     example.onclick = function() { loadGame (exampleGames[0].url); return false; };
     example.appendChild(document.createTextNode('Try an example game!'));
 }
@@ -71,6 +73,99 @@ function resetButton() {
     btn.onclick = function() { atsamd21.reset(0x4000); };
     btn.innerHTML = 'Reset';
     elem.appendChild(btn);
+}
+
+function customKeyMapping() {
+    var custom = document.getElementById('custom-keys');
+    custom.onclick = function() { doDown(); return false; };
+    custom.appendChild(document.createTextNode('Or create your own key mapping.'));
+}
+
+function giveInstruction(message: string) {
+    var span = document.getElementById('instruction');
+    span.innerText = message;
+}
+
+function doDown() {
+    keymap = [];
+    giveInstruction("Press Down");
+    var handler = (event) => {
+        keymap.push(event.keyCode);
+        document.removeEventListener('keydown', handler);
+        doLeft();
+    };
+    document.addEventListener('keydown', handler);
+}
+
+function doLeft() {
+    giveInstruction("Press Left");
+    var handler = (event) => {
+        keymap.push(event.keyCode);
+        document.removeEventListener('keydown', handler);
+        doRight();
+    };
+    document.addEventListener('keydown', handler);
+}
+
+function doRight() {
+    giveInstruction("Press Right");
+    var handler = (event) => {
+        keymap.push(event.keyCode);
+        document.removeEventListener('keydown', handler);
+        doUp();
+    };
+    document.addEventListener('keydown', handler);
+}
+
+function doUp() {
+    giveInstruction("Press Up");
+    var handler = (event) => {
+        keymap.push(event.keyCode);
+        document.removeEventListener('keydown', handler);
+        doA();
+    };
+    document.addEventListener('keydown', handler);
+}
+
+function doA() {
+    giveInstruction("Press A");
+    var handler = (event) => {
+        keymap.push(event.keyCode);
+        document.removeEventListener('keydown', handler);
+        doB();
+    };
+    document.addEventListener('keydown', handler);
+}
+
+function doB() {
+    giveInstruction("Press B");
+    var handler = (event) => {
+        keymap.push(event.keyCode);
+        document.removeEventListener('keydown', handler);
+        doMenu();
+    };
+    document.addEventListener('keydown', handler);
+}
+
+function doMenu() {
+    giveInstruction("Press Menu");
+    var handler = (event) => {
+        keymap.push(event.keyCode);
+        document.removeEventListener('keydown', handler);
+        doHome();
+    };
+    document.addEventListener('keydown', handler);
+}
+
+function doHome() {
+    giveInstruction("Press Home");
+    var handler = (event) => {
+        keymap.push(event.keyCode);
+        document.removeEventListener('keydown', handler);
+        if (buttons) buttons.setKeymap(keymap);
+        giveInstruction("");
+    };
+    document.addEventListener('keydown', handler);
 }
 
 function listenToFileUpload() {
@@ -98,7 +193,8 @@ function load(buffer: ArrayBuffer) {
     var canvas = <HTMLCanvasElement>document.getElementById('screen');
     var ctx = canvas.getContext("2d");
     screen = new St7735(atsamd21.sercom4, atsamd21.portA, atsamd21.portB, ctx);
-    var buttons = new Buttons(atsamd21.sercom4, atsamd21.portA, atsamd21.portB);
+    buttons = new Buttons(atsamd21.sercom4, atsamd21.portA, atsamd21.portB);
+    if (keymap) buttons.setKeymap(keymap);
 
     if (!running) {
         running = true;

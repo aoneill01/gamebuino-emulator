@@ -24,11 +24,6 @@
             box-shadow: 0 0 8px red;
         }
 
-        .game-link {
-            padding-right: .5em;
-            display: inline-block;
-        }
-
         #rate {
             display: none;
         }
@@ -56,6 +51,10 @@
         #error {
             color: red;
         }
+
+        #instruction {
+            font-weight: bold;
+        }
     </style>
 </head>
 
@@ -63,12 +62,13 @@
     <canvas id="screen" height="256" width="320"></canvas>
     <div id="rate"></div>
     <div class="main-content">
-        <p>Be patient. This runs much slower than the hardware. The "SD INIT... FAILED" message is normal because SD hasn't been implemented. <a id="example" href="#"></a></p>
+        <p>Be patient. This likely runs slower than the META. The "SD INIT... FAILED" message is normal because SD hasn't been implemented. <a id="example" href="#"></a></p>
         
         <div id="reset-container"></div>
 
         <h2>Controls</h2>
-        <p>←: S, ↑: E, →: F, ↓: D, Ⓐ: K, Ⓑ: L, Menu: R</p>
+        <p>←: S, ↑: E, →: F, ↓: D, Ⓐ: K, Ⓑ: L, Menu: R, Home: T</p>
+        <p><a id="custom-keys" href="#"></a> <span id="instruction"></span></p>
         
         <h2>Upload .BIN</h2>
         <p>Upload your own compiled game here.</p>
