@@ -192,7 +192,11 @@ function load(buffer: ArrayBuffer) {
 
     var canvas = <HTMLCanvasElement>document.getElementById('screen');
     var ctx = canvas.getContext("2d");
+
     screen = new St7735(atsamd21.sercom4, atsamd21.portA, atsamd21.portB, ctx);
+    // Clear the canvas
+    screen.clear();
+
     buttons = new Buttons(atsamd21.sercom4, atsamd21.portA, atsamd21.portB);
     if (keymap) buttons.setKeymap(keymap);
 

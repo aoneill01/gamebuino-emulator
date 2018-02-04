@@ -124,4 +124,11 @@ export class St7735 {
             this._ctx.putImageData(this._imageData, 0, 0);
         }
     }
+
+    clear() {
+        // Set every pixel to black
+        for (var i = 0; i < this._data.length; i++) {
+            this._data[i] = (255 << 24);
+        }
+    }
 }
