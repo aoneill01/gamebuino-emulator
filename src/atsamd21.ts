@@ -83,6 +83,12 @@ export class Atsamd21 {
             addr -= 0x20000000;
             return this._sram[addr] | (this._sram[addr + 1] << 8);
         }
+        else if (addr < 0x60000000) {
+            if (addr == 0x4200401A) {
+                // Hack for ADC RESULT
+                return Math.floor(Math.random() * 0xFFFF);
+            }
+        }
         // this.log("NO HANDLER");
         return 0;
     }
@@ -130,6 +136,7 @@ export class Atsamd21 {
                 // Hack for GCLK CTRL
                 return 0; // There is no reset operation ongoing
             }
+            
             if (addr == 0x42004018) {
                 // Hack for ADC INTFLAG RESRDY
                 return 1;
@@ -364,8 +371,8 @@ export class Atsamd21 {
             instAddr = this.readRegister(this.pcIndex) - 2;
         }
 
-        // if ((instAddr >= 0x62b4 && instAddr <= 0x6590) || (instAddr >= 0x8188 && instAddr <= 0x81b8)) {
-             // console.log(`xxx ${instAddr.toString(16)} r0: ${this.readRegister(0).toString(16)}, r1: ${this.readRegister(1).toString(16)}, r2: ${this.readRegister(2).toString(16)}, r3: ${this.readRegister(3).toString(16)}, r4: ${this.readRegister(4).toString(16)}, r5: ${this.readRegister(5).toString(16)}, r6: ${this.readRegister(6).toString(16)}, r7: ${this.readRegister(7).toString(16)}`);
+        // if ((instAddr >= 0xf878 && instAddr <= 0xf936)) {
+            // console.log(`xxx ${instAddr.toString(16)} r0: ${this.readRegister(0).toString(16)}, r1: ${this.readRegister(1).toString(16)}, r2: ${this.readRegister(2).toString(16)}, r3: ${this.readRegister(3).toString(16)}, r4: ${this.readRegister(4).toString(16)}, r5: ${this.readRegister(5).toString(16)}, r6: ${this.readRegister(6).toString(16)}, r7: ${this.readRegister(7).toString(16)}`);
         // }
         //if (instAddr == 0x3a30) {
         //    console.log(`width: ${this.fetchHalfword(0x2000012c + 12).toString(16)}, height: ${this.fetchHalfword(0x2000012c + 14).toString(16)}`)
