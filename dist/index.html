@@ -8,6 +8,9 @@
         body {
             font-family: 'Open Sans', sans-serif;
             color: #4d545d;
+            background-image: url(bg.png);
+            background-repeat: no-repeat;
+            background-position: center -82px;
         }
 
         .led {
@@ -30,7 +33,6 @@
 
         #screen {
             display: block;
-            border: 1px solid #333;
             margin: 0 auto;
         }
 
@@ -62,7 +64,7 @@
     <canvas id="screen" height="256" width="320"></canvas>
     <div id="rate"></div>
     <div class="main-content">
-        <p>Be patient. This likely runs slower than the META. The "SD INIT... FAILED" message is normal because SD hasn't been implemented. <a id="example" href="#"></a></p>
+        <p style="background-color: rgba(255, 255, 255, .8); margin-top: 2px;">Be patient. This likely runs slower than the META. The "SD INIT... FAILED" message is normal because SD hasn't been implemented. <a id="example" href="#"></a></p>
         
         <div id="reset-container"></div>
 

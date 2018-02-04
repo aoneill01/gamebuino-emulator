@@ -70,7 +70,7 @@ function listGames() {
 function resetButton() {
     var elem = document.getElementById('reset-container');
     var btn = document.createElement("button");
-    btn.onclick = function() { atsamd21.reset(0x4000); };
+    btn.onclick = function() { screen.clear(); atsamd21.reset(0x4000); };
     btn.innerHTML = 'Reset';
     elem.appendChild(btn);
 }
