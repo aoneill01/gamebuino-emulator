@@ -31,6 +31,8 @@ export class Buttons {
         document.addEventListener('keydown', (event) => {
             for (var i = 0; i < this._keymap.length; i++) {
                 if (this._keymap[i] == event.keyCode) {
+                    // Stop normal behavior of this button
+                    event.preventDefault();
                     // Set the correct bit to 0
                     this._buttonData &= (~(1 << i));
                     break;
