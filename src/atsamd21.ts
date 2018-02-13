@@ -1,6 +1,5 @@
 import { PortRegister } from "./port-register";
 import { SercomRegister } from "./sercom-register";
-import { ScsRegisters } from "./scs-registers";
 import { DmacRegisters } from "./dmac-registers";
 
 const PORTA_OFFSET: number = 0x41004400;
@@ -31,7 +30,6 @@ export class Atsamd21 {
     portB: PortRegister;
     sercom4: SercomRegister;
     sercom5: SercomRegister;
-    scs: ScsRegisters;
     dmac: DmacRegisters;
     
     cycleCount: number = 0;
@@ -59,8 +57,6 @@ export class Atsamd21 {
         this.portB = new PortRegister(PORTB_OFFSET, this);
         this.sercom4 = new SercomRegister(4, this);
         this.sercom5 = new SercomRegister(5, this);
-
-        this.scs = new ScsRegisters(this);
 
         this.dmac = new DmacRegisters(this);
     }

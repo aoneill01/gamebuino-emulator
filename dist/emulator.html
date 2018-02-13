@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>META</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            color: #4d545d;
+        }
+
+        #screen {
+            display: block;
+            margin: 0 auto;
+        }
+
+        .main-content {
+            width: 650px;
+            margin: 0 auto;
+        }        
+    </style>
+</head>
+
+<body>
+    <canvas id="screen" height="256" width="320"></canvas>
+
+    <script src="meta-emulator.js"></script>
+
+    <script>
+        var emulator = new metaEmulator.Emulator("screen");
+        emulator.loadFromUrl("https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/Solitaire/Solitaire.bin");
+    </script>
+</body>
+
+</html>
