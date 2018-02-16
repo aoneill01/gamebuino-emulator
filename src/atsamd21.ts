@@ -376,6 +376,12 @@ export class Atsamd21 {
         // this.log(`; 0x${(this.readRegister(this.pcIndex) - 2).toString(16)}: 0x${this.fetchHalfword(this.readRegister(this.pcIndex) - 2).toString(16)}`);
         var instructionHandler = this._decodedInstructions[instAddr];
         if (!instructionHandler) {
+            // bootloader.loader()
+            if (instAddr == -2) {
+                this.reset(0x4000);
+                return;
+            } 
+            
             this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}; prev addr: 0x${this._tmpAddr ? this._tmpAddr.toString(16) : "?"}`);
         }
         this._tmpAddr = instAddr;
