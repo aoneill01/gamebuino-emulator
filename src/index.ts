@@ -69,10 +69,20 @@ export class Emulator {
 
     private run() {
         try {
-            const loopCount = 480000;
+            var runFunc = () => { this.run(); };
+            const loopCount = 30000;
             var priorTick = this.atsamd21.tickCount;
             var count = loopCount;
             for (var i = 0; i < count; i++) {
+                this.atsamd21.step();
+                this.atsamd21.step();
+                this.atsamd21.step();
+                this.atsamd21.step();
+                this.atsamd21.step();
+                this.atsamd21.step();
+                this.atsamd21.step();
+                this.atsamd21.step();
+                this.atsamd21.step();
                 this.atsamd21.step();
             }
             this._total += this.atsamd21.tickCount - priorTick;
@@ -80,7 +90,7 @@ export class Emulator {
             this.screen.updateCanvas();
     
             if (this.running) {
-                setTimeout(() => { this.run(); }, 0);
+                setTimeout(runFunc, 0);
             }
         }
         catch (error) {
