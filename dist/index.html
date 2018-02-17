@@ -31,8 +31,9 @@
             display: none;
         }
 
-        #screen {
-            display: block;
+        #emulator {
+            width: 320px;
+            height: 256px;
             margin: 0 auto;
         }
 
@@ -61,16 +62,15 @@
 </head>
 
 <body>
-    <canvas id="screen" height="256" width="320"></canvas>
-    <div id="rate"></div>
+    <div id="emulator"></div>
     <div class="main-content">
-        <p style="background-color: rgba(255, 255, 255, .8); margin-top: 2px;">Be patient. This likely runs slower than the META. The "SD INIT... FAILED" message is normal because SD hasn't been implemented. <a id="example" href="#"></a></p>
+        <p style="background-color: rgba(255, 255, 255, .8); margin-top: 2px;">Be patient. This may runs slower than the META. The "SD INIT... FAILED" message is normal because SD hasn't been implemented. <a href="#" onclick="loadSolitaire(); return false;">Try out Solitaire.</a></p>
         
-        <div id="reset-container"></div>
+        <button onclick="reset();">Reset</button>
 
         <h2>Controls</h2>
         <p>←: S, ↑: E, →: F, ↓: D, Ⓐ: K, Ⓑ: L, Menu: R, Home: T</p>
-        <p><a id="custom-keys" href="#"></a> <span id="instruction"></span></p>
+        <p><a id="custom-keys" href="#" onclick="doDown(); return false;">Or create your own key mapping.</a> <span id="instruction"></span></p>
         
         <h2>Upload .BIN</h2>
         <p>Upload your own compiled game here.</p>
@@ -78,7 +78,128 @@
         <div id="error"></div>
     </div>
 
-    <script src="bundle.js"></script>
+    <script src="meta-emulator.js"></script>
+
+    <script>
+        var emulator = new metaEmulator.Emulator("emulator");
+        
+        document.getElementById("file-upload").onchange = function() {
+            if (this.files.length == 1) {
+                var f = this.files[0];
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    emulator.loadFromBuffer(e.target.result);
+                };
+                reader.readAsArrayBuffer(f);
+                this.value = "";
+            }
+        };
+
+        function loadSolitaire() {
+            emulator.loadFromUrl("https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/Solitaire/Solitaire.bin");
+        }
+
+        function reset() {
+            emulator.reset();
+        }
+
+        function giveInstruction(message) {
+            var span = document.getElementById('instruction');
+            span.innerText = message;
+        }
+
+        var keymap;
+        function doDown() {
+            keymap = [];
+            giveInstruction("Press Down");
+            var handler = (event) => {
+                event.preventDefault();
+                keymap.push(event.keyCode);
+                document.removeEventListener('keydown', handler);
+                doLeft();
+            };
+            document.addEventListener('keydown', handler);
+        }
+
+        function doLeft() {
+            giveInstruction("Press Left");
+            var handler = (event) => {
+                event.preventDefault();
+                keymap.push(event.keyCode);
+                document.removeEventListener('keydown', handler);
+                doRight();
+            };
+            document.addEventListener('keydown', handler);
+        }
+
+        function doRight() {
+            giveInstruction("Press Right");
+            var handler = (event) => {
+                event.preventDefault();
+                keymap.push(event.keyCode);
+                document.removeEventListener('keydown', handler);
+                doUp();
+            };
+            document.addEventListener('keydown', handler);
+        }
+
+        function doUp() {
+            giveInstruction("Press Up");
+            var handler = (event) => {
+                event.preventDefault();
+                keymap.push(event.keyCode);
+                document.removeEventListener('keydown', handler);
+                doA();
+            };
+            document.addEventListener('keydown', handler);
+        }
+
+        function doA() {
+            giveInstruction("Press A");
+            var handler = (event) => {
+                event.preventDefault();
+                keymap.push(event.keyCode);
+                document.removeEventListener('keydown', handler);
+                doB();
+            };
+            document.addEventListener('keydown', handler);
+        }
+
+        function doB() {
+            giveInstruction("Press B");
+            var handler = (event) => {
+                event.preventDefault();
+                keymap.push(event.keyCode);
+                document.removeEventListener('keydown', handler);
+                doMenu();
+            };
+            document.addEventListener('keydown', handler);
+        }
+
+        function doMenu() {
+            giveInstruction("Press Menu");
+            var handler = (event) => {
+                event.preventDefault();
+                keymap.push(event.keyCode);
+                document.removeEventListener('keydown', handler);
+                doHome();
+            };
+            document.addEventListener('keydown', handler);
+        }
+
+        function doHome() {
+            giveInstruction("Press Home");
+            var handler = (event) => {
+                event.preventDefault();
+                keymap.push(event.keyCode);
+                document.removeEventListener('keydown', handler);
+                emulator.setKeymap(keymap);
+                giveInstruction("");
+            };
+            document.addEventListener('keydown', handler);
+        }
+
+    </script>
 </body>
 
 </html>

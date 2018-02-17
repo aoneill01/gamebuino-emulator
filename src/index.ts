@@ -12,6 +12,7 @@ export class Emulator {
     loading:boolean = false;
     
     private _total:number;
+    private _customKeymap:number[];
 
     constructor(locationId:string) {
         var canvas = <HTMLCanvasElement>document.createElement("canvas");
@@ -45,7 +46,10 @@ export class Emulator {
         this.screen.clear();
     
         this.buttons = new Buttons(this.atsamd21.sercom4, this.atsamd21.portA, this.atsamd21.portB);
-    
+        if (this._customKeymap) {
+            this.buttons.setKeymap(this._customKeymap);
+        }
+        
         if (this.autoStart) {
             this.start();
         }
@@ -97,6 +101,14 @@ export class Emulator {
             this.running = false;
             
             throw error;
+        }
+    }
+
+    setKeymap(keymap:number[]) {
+        this._customKeymap = keymap;
+
+        if (this.buttons) {
+            this.buttons.setKeymap(this._customKeymap);
         }
     }
 }
