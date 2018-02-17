@@ -21,8 +21,9 @@ module.exports = {
     port: 8080
   },
   output: {
-    filename: 'bundle.js',
-    path: path.resolve(__dirname, 'dist')
+    filename: 'meta-emulator.js',
+    path: path.resolve(__dirname, 'dist'),
+    library: 'metaEmulator'
   },
   plugins: [
     new webpack.optimize.UglifyJsPlugin({minimize: true})

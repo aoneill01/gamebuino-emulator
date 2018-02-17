@@ -1,6 +1,5 @@
 import { PortRegister } from "./port-register";
 import { SercomRegister } from "./sercom-register";
-import { ScsRegisters } from "./scs-registers";
 import { DmacRegisters } from "./dmac-registers";
 
 const PORTA_OFFSET: number = 0x41004400;
@@ -31,7 +30,6 @@ export class Atsamd21 {
     portB: PortRegister;
     sercom4: SercomRegister;
     sercom5: SercomRegister;
-    scs: ScsRegisters;
     dmac: DmacRegisters;
     
     cycleCount: number = 0;
@@ -59,8 +57,6 @@ export class Atsamd21 {
         this.portB = new PortRegister(PORTB_OFFSET, this);
         this.sercom4 = new SercomRegister(4, this);
         this.sercom5 = new SercomRegister(5, this);
-
-        this.scs = new ScsRegisters(this);
 
         this.dmac = new DmacRegisters(this);
     }
@@ -331,9 +327,9 @@ export class Atsamd21 {
             this.setRegister(this.lrIndex, 0xfffffff9);
             this.incrementPc();
         }
-        // HACK: Only waiting half the required time since we
+        // HACK: Only waiting a percentage of the required time since we
         // gain so much performance with the unrealistic DMAC
-        else if (this._sysTickTrigger >= 48000 / 2) {
+        else if (this._sysTickTrigger >= 20000) {
             this._sysTickTrigger = 0;
             // this.log('sysTickHandler');
             // TODO better implementation for CPSR 
@@ -380,6 +376,12 @@ export class Atsamd21 {
         // this.log(`; 0x${(this.readRegister(this.pcIndex) - 2).toString(16)}: 0x${this.fetchHalfword(this.readRegister(this.pcIndex) - 2).toString(16)}`);
         var instructionHandler = this._decodedInstructions[instAddr];
         if (!instructionHandler) {
+            // bootloader.loader()
+            if (instAddr == -2) {
+                this.reset(0x4000);
+                return;
+            } 
+            
             this.log(`NO INSTRUCTIONHANDLER! 0x${instAddr.toString(16)}: 0x${this.fetchHalfword(instAddr).toString(16)}; prev addr: 0x${this._tmpAddr ? this._tmpAddr.toString(16) : "?"}`);
         }
         this._tmpAddr = instAddr;

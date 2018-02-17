@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>META</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Open Sans', sans-serif;
+            color: #4d545d;
+        }
+
+        #emulator { 
+            position: relative;
+        }
+
+        #start {
+            position: fixed;
+            width: 320px;
+            height: 256px;
+            background-image: url(controls.png);
+        }
+
+        #start-div {
+            padding-top: 20px;
+            text-align: center;
+            display: block;
+            margin: 0 auto;
+        }
+
+        #start a {    
+            font-size: 40px;
+            font-weight: bold;
+            text-decoration: none;
+            color: white;
+        }
+
+        #start a:hover { 
+            text-decoration: underline;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="emulator">
+        <div id="start">
+            <div id="start-div"><a href="#" onclick="loadGame(); return false;">&#9654; Play</a></div>
+        </div>
+    </div>
+
+    <script src="meta-emulator.js"></script>
+    <script src="url-search-params.js"></script>
+
+    <script>
+        var emulator = new metaEmulator.Emulator("emulator");
+        emulator.autoStart = false;
+        
+        var urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('bin')) {
+            emulator.loadFromUrl(urlParams.get('bin'));
+        } 
+        
+        function loadGame() {
+            if (emulator.loading) {
+                emulator.autoStart = true;
+            }
+            else {
+                emulator.start();
+            }
+            
+            document.getElementById("start").style.display = "none";
+        }
+    </script>
+</body>
+
+</html>
