@@ -12,7 +12,7 @@ export class Emulator {
     loading:boolean = false;
     
     private _total:number;
-    private _customKeymap:number[];
+    private _customKeymap:number[][];
 
     constructor(locationId:string) {
         var canvas = <HTMLCanvasElement>document.createElement("canvas");
@@ -104,7 +104,7 @@ export class Emulator {
         }
     }
 
-    setKeymap(keymap:number[]) {
+    setKeymap(keymap:number[][]) {
         this._customKeymap = keymap;
 
         if (this.buttons) {

@@ -9,14 +9,14 @@ export class Buttons {
     private _buttonData: number;
 
     private _keymap = [
-        68, // down
-        83, // left
-        70, // right
-        69, // up
-        75, // A
-        76, // B
-        82, // MENU
-        84  // HOME
+        [83, 40], // down
+        [65, 81, 37], // left
+        [68, 39], // right
+        [87, 90, 38], // up
+        [74], // A
+        [75], // B
+        [85], // MENU
+        [73]  // HOME
     ];
 
     constructor(sercom: SercomRegister, portA: PortRegister, portB: PortRegister) {
@@ -30,22 +30,26 @@ export class Buttons {
 
         document.addEventListener('keydown', (event) => {
             for (var i = 0; i < this._keymap.length; i++) {
-                if (this._keymap[i] == event.keyCode) {
-                    // Stop normal behavior of this button
-                    event.preventDefault();
-                    // Set the correct bit to 0
-                    this._buttonData &= (~(1 << i));
-                    break;
+                for (var code of this._keymap[i]) {
+                    if (code == event.keyCode) {
+                        // Stop normal behavior of this button
+                        event.preventDefault();
+                        // Set the correct bit to 0
+                        this._buttonData &= (~(1 << i));
+                        break;
+                    }
                 }
             }
         });
 
         document.addEventListener('keyup', (event) => {
             for (var i = 0; i < this._keymap.length; i++) {
-                if (this._keymap[i] == event.keyCode) {
-                    // Set the correct bit to 1
-                    this._buttonData |= (1 << i);
-                    break;
+                for (var code of this._keymap[i]) {
+                    if (code == event.keyCode) {
+                        // Set the correct bit to 1
+                        this._buttonData |= (1 << i);
+                        break;
+                    }
                 }
             }
         });
@@ -57,7 +61,7 @@ export class Buttons {
         this._sercom.data = this._buttonData;
     }
 
-    setKeymap(keymap) {
+    setKeymap(keymap: number[][]) {
         this._keymap = keymap;
     }
 }

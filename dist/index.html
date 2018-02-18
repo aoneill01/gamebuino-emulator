@@ -69,7 +69,7 @@
         <button onclick="reset();">Reset</button>
 
         <h2>Controls</h2>
-        <p>←: S, ↑: E, →: F, ↓: D, Ⓐ: K, Ⓑ: L, Menu: R, Home: T</p>
+        <p>←: A/Q, ↑: W/Z, →: F, ↓: D, Ⓐ: J, Ⓑ: K, Menu: U, Home: I</p>
         <p><a id="custom-keys" href="#" onclick="doDown(); return false;">Or create your own key mapping.</a> <span id="instruction"></span></p>
         
         <h2>Upload .BIN</h2>
@@ -114,7 +114,7 @@
             giveInstruction("Press Down");
             var handler = (event) => {
                 event.preventDefault();
-                keymap.push(event.keyCode);
+                keymap.push([event.keyCode]);
                 document.removeEventListener('keydown', handler);
                 doLeft();
             };
@@ -125,7 +125,7 @@
             giveInstruction("Press Left");
             var handler = (event) => {
                 event.preventDefault();
-                keymap.push(event.keyCode);
+                keymap.push([event.keyCode]);
                 document.removeEventListener('keydown', handler);
                 doRight();
             };
@@ -136,7 +136,7 @@
             giveInstruction("Press Right");
             var handler = (event) => {
                 event.preventDefault();
-                keymap.push(event.keyCode);
+                keymap.push([event.keyCode]);
                 document.removeEventListener('keydown', handler);
                 doUp();
             };
@@ -147,7 +147,7 @@
             giveInstruction("Press Up");
             var handler = (event) => {
                 event.preventDefault();
-                keymap.push(event.keyCode);
+                keymap.push([event.keyCode]);
                 document.removeEventListener('keydown', handler);
                 doA();
             };
@@ -158,7 +158,7 @@
             giveInstruction("Press A");
             var handler = (event) => {
                 event.preventDefault();
-                keymap.push(event.keyCode);
+                keymap.push([event.keyCode]);
                 document.removeEventListener('keydown', handler);
                 doB();
             };
@@ -169,7 +169,7 @@
             giveInstruction("Press B");
             var handler = (event) => {
                 event.preventDefault();
-                keymap.push(event.keyCode);
+                keymap.push([event.keyCode]);
                 document.removeEventListener('keydown', handler);
                 doMenu();
             };
@@ -180,7 +180,7 @@
             giveInstruction("Press Menu");
             var handler = (event) => {
                 event.preventDefault();
-                keymap.push(event.keyCode);
+                keymap.push([event.keyCode]);
                 document.removeEventListener('keydown', handler);
                 doHome();
             };
@@ -191,7 +191,7 @@
             giveInstruction("Press Home");
             var handler = (event) => {
                 event.preventDefault();
-                keymap.push(event.keyCode);
+                keymap.push([event.keyCode]);
                 document.removeEventListener('keydown', handler);
                 emulator.setKeymap(keymap);
                 giveInstruction("");
