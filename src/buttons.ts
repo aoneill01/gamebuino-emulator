@@ -64,4 +64,8 @@ export class Buttons {
     setKeymap(keymap: number[][]) {
         this._keymap = keymap;
     }
+
+    customButtonData(buttonData: number) {
+        this._buttonData = buttonData;
+    }
 }

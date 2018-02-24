@@ -123,4 +123,10 @@ export class Emulator {
             this._buttons.setKeymap(this._customKeymap);
         }
     }
+
+    setButtonData(buttonData: number) {
+        if (this._buttons) {
+            this._buttons.customButtonData(buttonData);
+        }
+    }
 }

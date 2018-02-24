@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=396, user-scalable=no">
+    <title>Gamebuino META Emulator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #console { 
+            width: 396px;
+            height: 210px;
+            background-image: url(console2.png);
+            position: relative;
+        }
+
+        #emulator {
+            transform: scale(.5);
+            position: absolute;
+            top: -34px;
+            left: 38px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="console"><div id="emulator"></div></div>
+    
+    
+    <script src="meta-emulator.js"></script>
+
+    <script>
+        var emulator = new metaEmulator.Emulator("emulator");
+        emulator.loadFromUrl("https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/Solitaire/Solitaire.bin");
+
+        const dpadX = 64;
+        const dpadY = 101;
+        const dpadDist = 45;
+
+        const aX = 313;
+        const aY = 109;
+
+        const bX = 351;
+        const bY = 94;
+
+        const menuX = 148;
+        const menuY = 181;
+
+        const homeX = 248;
+        const homeY = 181;
+
+        const btnDist = 20;
+        
+        var controls = document.getElementById('console');
+        controls.addEventListener("touchstart", handleTouches);
+
+        controls.addEventListener("touchmove", handleTouches);
+
+        controls.addEventListener("touchend", handleTouches);
+
+        function squareDist(touch, x, y) {
+            return (touch.pageX - x) * (touch.pageX - x) + (touch.pageY - y) * (touch.pageY - y);
+        }
+
+        function handleTouches(event) {
+            event.preventDefault();
+
+            var buttonData = 0b11111111;
+
+            for (var touch of event.touches) {
+                buttonData &= handleTouch(touch);
+            }
+            // console.log(buttonData.toString(2));
+            emulator.setButtonData(buttonData);
+        }
+
+        function handleTouch(touch) {
+            var direction = "";
+            if (squareDist(touch, dpadX, dpadY) < dpadDist * dpadDist) {
+                var angle = Math.atan2(dpadY - touch.pageY, touch.pageX - dpadX);
+                
+                if (angle < -7*Math.PI/8) {
+                    return 0b11111101;
+                }
+                else if (angle < -5*Math.PI/8) {
+                    return 0b11111100;
+                }
+                else if (angle < -3*Math.PI/8) {
+                    return 0b11111110;
+                }
+                else if (angle < -Math.PI/8) {
+                    return 0b11111010;
+                }
+                else if (angle < Math.PI/8) {
+                    return 0b11111011;
+                }
+                else if (angle < 3*Math.PI/8) {
+                    return 0b11110011;
+                }
+                else if (angle < 5*Math.PI/8) {
+                    return 0b11110111;
+                }
+                else if (angle < 7*Math.PI/8) {
+                    return 0b11110101;
+                }
+                else {
+                    return 0b11111101;
+                }
+            }
+            else if (squareDist(touch, aX, aY) < btnDist * btnDist) {
+                return 0b11101111;
+            }
+            else if (squareDist(touch, bX, bY) < btnDist * btnDist) {
+                return 0b11011111;
+            }
+            else if (squareDist(touch, menuX, menuY) < btnDist * btnDist) {
+                return 0b10111111;
+            }
+            else if (squareDist(touch, homeX, homeY) < btnDist * btnDist) {
+                return 0b01111111;
+            }
+
+            return 0b11111111;
+        }
+    </script>
+</body>
+
+</html>
