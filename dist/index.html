@@ -8,38 +8,18 @@
         body {
             font-family: 'Open Sans', sans-serif;
             color: #4d545d;
-            background-image: url(bg.png);
-            background-repeat: no-repeat;
-            background-position: center -82px;
-        }
-
-        .led {
-            width: 10px;
-            height: 10px;
-            border: 1px solid gray;
-            margin: 0 auto;
-            border-radius: 50%;
-        }
-
-        .on {
-            background-color: red;
-            border: 1px solid darkred;
-            box-shadow: 0 0 8px red;
-        }
-
-        #rate {
-            display: none;
         }
 
         #emulator {
             width: 320px;
             height: 256px;
             margin: 0 auto;
+            background-image: url(controls.png);
         }
 
         .main-content {
-            width: 650px;
-            margin: 0 auto;
+            width: 500px;
+            margin: 20px auto;
         }
         
         h2 {
@@ -51,12 +31,21 @@
             margin-top: 0;
         }
 
-        #error {
-            color: red;
-        }
-
         #instruction {
             font-weight: bold;
+        }
+
+        #drop-zone {
+            width:  100%;
+            background-color: #e9ecef;
+            border-radius: .3rem;
+            padding: 50px;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        #drop-zone.drag-over {
+            background-color: #b3b5b8;
         }
     </style>
 </head>
@@ -64,18 +53,17 @@
 <body>
     <div id="emulator"></div>
     <div class="main-content">
-        <p style="background-color: rgba(255, 255, 255, .8); margin-top: 2px;">Be patient. This may runs slower than the META. The "SD INIT... FAILED" message is normal because SD hasn't been implemented. <a href="#" onclick="loadSolitaire(); return false;">Try out Solitaire.</a></p>
+        <p>🎴 <a href="#" onclick="loadSolitaire(); return false;">Try out Solitaire</a></p>
         
-        <button onclick="reset();">Reset</button>
+        <p>⟳ <a href="#" onclick="reset();">Reset Game</a></p>
 
-        <h2>Controls</h2>
-        <p>←: A/Q, ↑: W/Z, →: F, ↓: D, Ⓐ: J, Ⓑ: K, Menu: U, Home: I</p>
-        <p><a id="custom-keys" href="#" onclick="doDown(); return false;">Or create your own key mapping.</a> <span id="instruction"></span></p>
+        <p>🖮 <a id="custom-keys" href="#" onclick="doDown(); return false;">Create your own key mapping</a> <span id="instruction"></span></p>
         
-        <h2>Upload .BIN</h2>
-        <p>Upload your own compiled game here.</p>
-        <div><input type="file" id="file-upload" /></div>
-        <div id="error"></div>
+        <h2>Upload Game</h2>
+        <div id="drop-zone" ondrop="dropHandler(event);" ondragover="event.preventDefault();" ondragenter="dragOverStyle(true);" ondragleave="dragOverStyle(false);">
+            Drop your .bin here
+        </div>
+        <div>Or choose file: <input type="file" id="file-upload" /></div>
     </div>
 
     <script src="meta-emulator.js"></script>
@@ -101,6 +89,34 @@
 
         function reset() {
             emulator.reset();
+        }
+
+        function dragOverStyle(enabled) {
+            document.getElementById('drop-zone').className = (enabled ? 'drag-over' : '');
+        }
+
+        function dropHandler(ev) {
+            ev.preventDefault();
+            dragOverStyle(false);
+            var dt = ev.dataTransfer;
+            if (dt.items) {
+                if (dt.items[0].kind == "file") {
+                    var f = dt.items[0].getAsFile();
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+                        emulator.loadFromBuffer(e.target.result);
+                    };
+                    reader.readAsArrayBuffer(f);
+                }
+            } 
+            else {
+                var f = dt.files[0];
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    emulator.loadFromBuffer(e.target.result);
+                };
+                reader.readAsArrayBuffer(f);
+            }
         }
 
         function giveInstruction(message) {
