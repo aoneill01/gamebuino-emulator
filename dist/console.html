@@ -2,26 +2,26 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=396, user-scalable=no">
+    <meta name="viewport" content="width=808, user-scalable=no">
     <title>Gamebuino META Emulator</title>
     <style>
         body {
-            margin: 0;
+            margin: 10px;
             padding: 0;
+            background-color: #4485cf;
         }
 
         #console { 
-            width: 396px;
-            height: 210px;
+            width: 788px;
+            height: 428px;
             background-image: url(console2.png);
             position: relative;
         }
 
         #emulator {
-            transform: scale(.5);
             position: absolute;
-            top: -34px;
-            left: 38px;
+            top: 76px;
+            left: 232px;
         }
     </style>
 </head>
@@ -31,38 +31,58 @@
     
     
     <script src="meta-emulator.js"></script>
+    <script src="url-search-params.js"></script>
 
     <script>
+        var urlParams = new URLSearchParams(window.location.search);
         var emulator = new metaEmulator.Emulator("emulator");
-        emulator.loadFromUrl("https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/Solitaire/Solitaire.bin");
+        emulator.loadFromUrl(urlParams.has('bin') ? urlParams.get('bin') : "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/Solitaire/Solitaire.bin");
 
-        const dpadX = 64;
-        const dpadY = 101;
-        const dpadDist = 45;
+        const dpadX = 119;
+        const dpadY = 216;
+        const dpadDist = 87;
 
-        const aX = 313;
-        const aY = 109;
+        const aX = 649;
+        const aY = 233;
 
-        const bX = 351;
-        const bY = 94;
+        const bX = 726;
+        const bY = 199;
 
-        const menuX = 148;
-        const menuY = 181;
+        const menuX = 297;
+        const menuY = 382;
 
-        const homeX = 248;
-        const homeY = 181;
+        const homeX = 505;
+        const homeY = 382;
 
-        const btnDist = 20;
+        const btnDist = 40;
         
         var controls = document.getElementById('console');
+
         controls.addEventListener("touchstart", handleTouches);
-
         controls.addEventListener("touchmove", handleTouches);
-
         controls.addEventListener("touchend", handleTouches);
+
+        controls.addEventListener("mousedown", handleMouseDown);
+        controls.addEventListener("mousemove", handleMouseMove);
+        controls.addEventListener("mouseup", handleMouseUp);
 
         function squareDist(touch, x, y) {
             return (touch.pageX - x) * (touch.pageX - x) + (touch.pageY - y) * (touch.pageY - y);
+        }
+
+        var mousePressed = false;
+        function handleMouseDown(event) {
+            mousePressed = true;
+            handleMouseMove(event);
+        }
+
+        function handleMouseMove(event) {
+            if (mousePressed) emulator.setButtonData(handleTouch(event));
+        }
+
+        function handleMouseUp() {
+            mousePressed = false;
+            emulator.setButtonData(0b11111111);
         }
 
         function handleTouches(event) {
@@ -71,6 +91,7 @@
             var buttonData = 0b11111111;
 
             for (var touch of event.touches) {
+                // console.log(touch.pageX + " " + touch.pageY);
                 buttonData &= handleTouch(touch);
             }
             // console.log(buttonData.toString(2));
