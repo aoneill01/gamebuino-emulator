@@ -2,9 +2,9 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "es5",
-    "declaration": true,
+    "declaration": false,
     "outDir": "./dist",
-    "sourceMap": true,
+    "sourceMap": false,
     "typeRoots": [
       "./node_modules/@types"
     ]
