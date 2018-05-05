@@ -1263,6 +1263,12 @@ export class Atsamd21 {
                     // this.log("TODO MRS");
                 }
             }
+            else if (instruction == 0xF3BF) {
+                this._decodedInstructions[instructionIndex] = () => {
+                    // this.log("TODO DMB");
+                    this.incrementPc();
+                }
+            }
         }
     }
 }
