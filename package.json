@@ -1,5 +1,5 @@
 {
-  "name": "gamebuino-emulator",
+  "name": "@aoneill01/gamebuino-emulator",
   "version": "1.0.0",
   "description": "Library to emulate a Gamebuino.",
   "main": "dist/index.js",
