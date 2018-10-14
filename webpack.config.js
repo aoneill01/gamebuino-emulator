@@ -1,9 +1,9 @@
 const path = require('path');
-var webpack = require("webpack");
 
 module.exports = {
+  mode: 'production',
   entry: './src/index.ts',
-  devtool: 'inline-source-map',
+  // devtool: 'inline-source-map',
   module: {
     rules: [
       {
@@ -24,8 +24,5 @@ module.exports = {
     filename: 'meta-emulator.js',
     path: path.resolve(__dirname, 'dist'),
     library: 'metaEmulator'
-  },
-  plugins: [
-    new webpack.optimize.UglifyJsPlugin({minimize: true})
-  ]
+  }
 };
