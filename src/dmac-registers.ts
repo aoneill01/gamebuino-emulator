@@ -14,10 +14,12 @@ const CHINTFLAG_OFFSET: number = 0x4E;
 export class DmacRegisters {
     private _baseAddr: number;
     private _wrbAddr: number;
+    private _descriptor: number;
 
     private _selectedChannelId: number;
     
     constructor(processor: Atsamd21) {
+        this._descriptor = 0;
 
         processor.registerPeripheralWriteHandler(DMAC_ADDR + BASEADDR_OFFSET, (address: number, value: number) => {
             this._baseAddr = value;
@@ -38,19 +40,25 @@ export class DmacRegisters {
             this.debugWrite("CHCTRLA", address, value);
             if (value == 0b10) {
                 // TODO use wrb appropriately
-                var channelConfigAddress = this._baseAddr + this._selectedChannelId * 0x10;
+
+                if (this._descriptor == 0) {
+                    this._descriptor = this._baseAddr + this._selectedChannelId * 0x10;
+                }
+
                 // TODO use btctrl
-                var btctrl = processor.fetchHalfword(channelConfigAddress);
-                var btcnt = processor.fetchHalfword(channelConfigAddress + 0x02);
-                var srcaddr = processor.fetchWord(channelConfigAddress + 0x04);
-                var dstaddr = processor.fetchWord(channelConfigAddress + 0x08);
-                var descaddr = processor.fetchWord(channelConfigAddress + 0x0C);
+                var btctrl = processor.fetchHalfword(this._descriptor);
+                var btcnt = processor.fetchHalfword(this._descriptor + 0x02);
+                var srcaddr = processor.fetchWord(this._descriptor + 0x04);
+                var dstaddr = processor.fetchWord(this._descriptor + 0x08);
+                var descaddr = processor.fetchWord(this._descriptor + 0x0C);
 
                 // console.log(`btctrl: 0x${btctrl.toString(16)}; btcnt: #${btcnt}; srcaddr: 0x${srcaddr.toString(16)}; dstaddr: 0x${dstaddr.toString(16)}; descaddr: 0x${descaddr.toString(16)};`)
                 
                 for (var i = 0; i < btcnt; i++) {
                     processor.writeByte(dstaddr, processor.fetchByte(srcaddr + i - btcnt));
                 }
+
+                this._descriptor = descaddr;
 
                 processor.dmacInterrupt();
             }
