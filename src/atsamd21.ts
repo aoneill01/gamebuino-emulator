@@ -679,6 +679,12 @@ export class Atsamd21 {
                             this.addAndSetCondition(this.readRegister(rdHd + 8), ~this.readRegister(rsHs + 8), 1);
                         };
                         break;
+                    case 0b1000:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            // this.log(`mov r${rdHd}, r${rsHs}`);
+                            this.setRegister(rdHd, this.readRegister(rsHs));
+                        };
+                        break;
                     case 0b1001:
                         this._decodedInstructions[instructionIndex] = () => {
                             // this.log(`mov r${rdHd}, h${rsHs + 8}`);
@@ -965,7 +971,15 @@ export class Atsamd21 {
                 let rd: number =     (instruction & 0b0000000000000111);
 
                 switch (opcode) {
-                    // TODO rev, revsh
+                    // TODO revsh
+                    case 0b00:
+                        this._decodedInstructions[instructionIndex] = () => {
+                            var rmVal = this.readRegister(rm);
+                            var result = ((0xff000000 & rmVal) >>> 24) | ((0x00ff0000 & rmVal) >>> 8) | ((0x0000ff00 & rmVal) << 8) | ((0x000000ff & rmVal) << 24);
+                            this.setRegister(rd, result);
+                            // this.log(`rev r${rd}, r${rm}`);
+                        };
+                        break;
                     case 0b01:
                         this._decodedInstructions[instructionIndex] = () => {
                             var rmVal = this.readRegister(rm);
