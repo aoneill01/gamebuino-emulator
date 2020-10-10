@@ -367,9 +367,9 @@ export class Atsamd21 {
             instAddr = this.readRegister(this.pcIndex) - 2;
         }
 
-        // if ((instAddr >= 0xf878 && instAddr <= 0xf936)) {
-            // console.log(`xxx ${instAddr.toString(16)} r0: ${this.readRegister(0).toString(16)}, r1: ${this.readRegister(1).toString(16)}, r2: ${this.readRegister(2).toString(16)}, r3: ${this.readRegister(3).toString(16)}, r4: ${this.readRegister(4).toString(16)}, r5: ${this.readRegister(5).toString(16)}, r6: ${this.readRegister(6).toString(16)}, r7: ${this.readRegister(7).toString(16)}`);
-        // }
+        //if ((instAddr >= 0xf878 && instAddr <= 0xf936)) {
+        //    console.log(`xxx ${instAddr.toString(16)} r0: ${this.readRegister(0).toString(16)}, r1: ${this.readRegister(1).toString(16)}, r2: ${this.readRegister(2).toString(16)}, r3: ${this.readRegister(3).toString(16)}, r4: ${this.readRegister(4).toString(16)}, r5: ${this.readRegister(5).toString(16)}, r6: ${this.readRegister(6).toString(16)}, r7: ${this.readRegister(7).toString(16)}`);
+        //}
         //if (instAddr == 0x3a30) {
         //    console.log(`width: ${this.fetchHalfword(0x2000012c + 12).toString(16)}, height: ${this.fetchHalfword(0x2000012c + 14).toString(16)}`)
         //}
@@ -417,29 +417,60 @@ export class Atsamd21 {
                     let offset: number = (instruction & 0b0000011111000000) >> 6;
                     switch (opcode) {
                         case 0: // LSL
-                            this._decodedInstructions[instructionIndex] = () => {
-                                var result = this.readRegister(rs) << offset;
-                                // this.log(`lsl r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
-                                this.setRegister(rd, result);
-                                this.condC = (this.readRegister(rs) & (1 << offset)) != 0;
-                                this.setNZ(result);
-                            }
+                            this._decodedInstructions[instructionIndex] = (offset > 0)
+                                ? () => {
+                                    // Implement shift in two parts, for symmetry with right shifts
+                                    const partialShift = this.readRegister(rs) << (offset - 1);
+                                    const result = partialShift << 1;
+
+                                    // this.log(`lsl r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
+                                    this.setRegister(rd, result);
+                                    this.condC = (partialShift & (1 << 31)) != 0;
+                                    this.setNZ(result);
+                                }
+                                : () => {
+                                    // Zero shift only copies
+                                    const result = this.readRegister(rs);
+
+                                    // this.log(`lsl r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
+                                    this.setRegister(rd, result);
+                                    // Zero shift does not update condC flag
+                                    this.setNZ(result);
+                                }
                             break;
                         case 1: // LSR
+                            if (offset == 0) {
+                                // Can shift all bits out. Result will always be zero, but condC
+                                // flag depends on sign of input.
+                                offset = 32;
+                            }
                             this._decodedInstructions[instructionIndex] = () => {
-                                var result = this.readRegister(rs) >>> offset;
+                                // Carry out shift in two steps. See ASR for details.
+                                const partialShift = this.readRegister(rs) >>> (offset - 1);
+                                const result = partialShift >>> 1;
+
                                 // this.log(`lsr r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
                                 this.setRegister(rd, result);
-                                this.condC = (this.readRegister(rs) & (1 << (32 - offset))) != 0;
+                                this.condC = (partialShift & 1) != 0;
                                 this.setNZ(result);
                             }
                             break;
                         case 2: // ASR
+                            if (offset == 0) {
+                                // Can shift all bits out. Result then depends on sign
+                                offset = 32;
+                            }
                             this._decodedInstructions[instructionIndex] = () => {
-                                var result = this.readRegister(rs) >> offset;
+                                // Carry out shift in two steps. The partialShift can be used to
+                                // set the condC flag. It also ensures that the shift is correct
+                                // when the offset is 32, a shift which JavaScript cannot carry
+                                // out at once.
+                                const partialShift = this.readRegister(rs) >> (offset - 1);
+                                const result = partialShift >> 1;
+
                                 // this.log(`asr r${rd}, r${rs}, #${offset} ; 0b${this.readRegister(rs).toString(2)} 0b${result.toString(2)}`);
                                 this.setRegister(rd, result);
-                                this.condC = (this.readRegister(rs) & (1 << (32 - offset))) != 0;
+                                this.condC = (partialShift & 1) != 0;
                                 this.setNZ(result);
                             }
                             break;
