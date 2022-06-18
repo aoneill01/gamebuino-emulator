@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=808, user-scalable=no">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+    <title>Gamebuino META Emulator</title>
+    <style>
+        body {
+            margin: 10px;
+            padding: 0;
+            background-color: #4485cf;
+            color: #004385;
+            font-size: 20px;
+            font-family: 'Open Sans', sans-serif;
+        }
+
+        #console { 
+            width: 788px;
+            height: 428px;
+            background-image: url(console2.png);
+            position: relative;
+        }
+
+        #emulator {
+            position: absolute;
+            top: 80px;
+            left: 232px;
+        }
+
+        #controls {
+            text-decoration: none;
+        }
+
+        .key { 
+            position: absolute;
+        }
+
+        #up {
+            top: 144px;
+            left: 99px;
+        }
+        #down {
+            top: 235px;
+            left: 103px;
+        }
+        #left {
+            top: 191px;
+            left: 59px;
+        }
+        #right {
+            top: 191px;
+            left: 144px;
+        }
+        #a {
+            top: 206px;
+            left: 639px;
+        }
+        #b {
+            top: 176px;
+            left: 710px;
+        }
+        #home {
+            top: 358px;
+            left: 494px;
+        }
+        #menu {
+            top: 358px;
+            left: 281px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="console"><div id="emulator"></div>
+        <span class="key" id="up" style="display:none;">W</span>
+        <span class="key" id="down" style="display:none;">S</span>
+        <span class="key" id="left" style="display:none;">A</span>
+        <span class="key" id="right" style="display:none;">D</span>
+        <span class="key" id="a" style="display:none;">J</span>
+        <span class="key" id="b" style="display:none;">K</span>
+        <span class="key" id="home" style="display:none;">I</span>
+        <span class="key" id="menu" style="display:none;">U</span>
+    </div>
+    <a id="controls" href="#" onclick="showControls();">Show keyboard controls</a>
+
+    <script src="meta-emulator.js"></script>
+    <script src="url-search-params.js"></script>
+
+    <script>
+        var urlParams = new URLSearchParams(window.location.search);
+        var emulator = new metaEmulator.Emulator("emulator");
+        emulator.loadFromUrl(urlParams.has('bin') ? urlParams.get('bin') : "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/Solitaire/Solitaire.bin");
+
+        const dpadX = 119;
+        const dpadY = 216;
+        const dpadDist = 87;
+
+        const aX = 649;
+        const aY = 233;
+
+        const bX = 726;
+        const bY = 199;
+
+        const menuX = 297;
+        const menuY = 382;
+
+        const homeX = 505;
+        const homeY = 382;
+
+        const btnDist = 40;
+        
+        var controls = document.getElementById('console');
+
+        controls.addEventListener("touchstart", handleTouches);
+        controls.addEventListener("touchmove", handleTouches);
+        controls.addEventListener("touchend", handleTouches);
+
+        controls.addEventListener("mousedown", handleMouseDown);
+        controls.addEventListener("mousemove", handleMouseMove);
+        controls.addEventListener("mouseup", handleMouseUp);
+
+        function showControls() {
+            var elements = document.getElementsByClassName('key');
+            for (var i = 0; i < elements.length; i++) {
+                var key = elements[i];
+                key.style.display = key.style.display == "none" ? "inline-block" : "none";
+            }
+        }
+
+        function squareDist(touch, x, y) {
+            return (touch.pageX - x) * (touch.pageX - x) + (touch.pageY - y) * (touch.pageY - y);
+        }
+
+        var mousePressed = false;
+        function handleMouseDown(event) {
+            mousePressed = true;
+            handleMouseMove(event);
+        }
+
+        function handleMouseMove(event) {
+            if (mousePressed) emulator.setButtonData(handleTouch(event));
+        }
+
+        function handleMouseUp() {
+            mousePressed = false;
+            emulator.setButtonData(0b11111111);
+        }
+
+        function handleTouches(event) {
+            event.preventDefault();
+
+            var buttonData = 0b11111111;
+
+            for (var touch of event.touches) {
+                // console.log(touch.pageX + " " + touch.pageY);
+                buttonData &= handleTouch(touch);
+            }
+            // console.log(buttonData.toString(2));
+            emulator.setButtonData(buttonData);
+        }
+
+        function handleTouch(touch) {
+            var direction = "";
+            if (squareDist(touch, dpadX, dpadY) < dpadDist * dpadDist) {
+                var angle = Math.atan2(dpadY - touch.pageY, touch.pageX - dpadX);
+                
+                if (angle < -7*Math.PI/8) {
+                    return 0b11111101;
+                }
+                else if (angle < -5*Math.PI/8) {
+                    return 0b11111100;
+                }
+                else if (angle < -3*Math.PI/8) {
+                    return 0b11111110;
+                }
+                else if (angle < -Math.PI/8) {
+                    return 0b11111010;
+                }
+                else if (angle < Math.PI/8) {
+                    return 0b11111011;
+                }
+                else if (angle < 3*Math.PI/8) {
+                    return 0b11110011;
+                }
+                else if (angle < 5*Math.PI/8) {
+                    return 0b11110111;
+                }
+                else if (angle < 7*Math.PI/8) {
+                    return 0b11110101;
+                }
+                else {
+                    return 0b11111101;
+                }
+            }
+            else if (squareDist(touch, aX, aY) < btnDist * btnDist) {
+                return 0b11101111;
+            }
+            else if (squareDist(touch, bX, bY) < btnDist * btnDist) {
+                return 0b11011111;
+            }
+            else if (squareDist(touch, menuX, menuY) < btnDist * btnDist) {
+                return 0b10111111;
+            }
+            else if (squareDist(touch, homeX, homeY) < btnDist * btnDist) {
+                return 0b01111111;
+            }
+
+            return 0b11111111;
+        }
+    </script>
+</body>
+
+</html>
