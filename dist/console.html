@@ -89,10 +89,11 @@
     <script src="url-search-params.js"></script>
 
     <script>
+        var doGamepadReset = false;
         var urlParams = new URLSearchParams(window.location.search);
         var emulator = new metaEmulator.Emulator("emulator");
         emulator.loadFromUrl(urlParams.has('bin') ? urlParams.get('bin') : "https://raw.githubusercontent.com/Rodot/Games-META/master/binaries/Solitaire/Solitaire.bin");
-
+        window.requestAnimationFrame(updateGamePadState);
         const dpadX = 119;
         const dpadY = 216;
         const dpadDist = 87;
@@ -147,7 +148,42 @@
             mousePressed = false;
             emulator.setButtonData(0b11111111);
         }
+        
+        function updateGamePadState() {
+            window.requestAnimationFrame(updateGamePadState);
+            if (!navigator) return;
+            const gamepads = navigator.getGamepads ? navigator.getGamepads() : (navigator.webkitGetGamepads ? navigator.webkitGetGamepads() : []);
+            if (!gamepads || gamepads.length == 0) return;
+            const gamepad = gamepads[0];
+            if(!gamepad) return;
 
+            let gamepadData = 0b11111111;
+            let buttonsCount = gamepad.buttons.length;
+            let axisCount = gamepad.axes.length;
+            if ((axisCount > 0 && gamepad.axes[0] < -.9) || (buttonsCount > 14 && gamepad.buttons[14].pressed)) gamepadData &= 0b11111101;
+            if ((axisCount > 0 && gamepad.axes[0] > .9) || (buttonsCount > 15 && gamepad.buttons[15].pressed)) gamepadData &= 0b11111011;
+            if ((axisCount > 1 && gamepad.axes[1] < -.9) || (buttonsCount > 12 && gamepad.buttons[12].pressed)) gamepadData &= 0b11110111;
+            if ((axisCount > 1 && gamepad.axes[1] > .9) || (buttonsCount > 13 && gamepad.buttons[13].pressed)) gamepadData &= 0b11111110;
+            if ((buttonsCount > 1 && gamepad.buttons[1].pressed) || (buttonsCount > 3 && gamepad.buttons[3].pressed)) gamepadData &= 0b11011111;
+            if ((buttonsCount > 0 && gamepad.buttons[0].pressed) || (buttonsCount > 2 && gamepad.buttons[2].pressed)) gamepadData &= 0b11101111;
+            if ((buttonsCount > 8 && gamepad.buttons[8].pressed)) gamepadData &= 0b10111111;
+            if ((buttonsCount > 9 && gamepad.buttons[9].pressed)) gamepadData &= 0b01111111;
+            
+            if (gamepadData == 0b11111111) 
+            {
+              if(doGamepadReset)
+              {
+                doGamepadReset = false;
+                emulator.setButtonData(gamepadData)
+              }
+            }
+            else
+            {
+              doGamepadReset = true;
+              emulator.setButtonData(gamepadData);
+            }
+        }
+        
         function handleTouches(event) {
             event.preventDefault();
 
